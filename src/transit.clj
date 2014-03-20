@@ -4,79 +4,7 @@
 
 (comment
 
-  (require '[transit.generators :as gen])
-  (require '[clojure.edn :as edn])
-  (require '[clojure.data.fressian :as f])
-
   (import [java.io File ByteArrayInputStream ByteArrayOutputStream OutputStreamWriter])
-
-  ;; take a seq of n forms, time writing/reading via edn, fressian and transit
-
-  (defn now [] (. System (nanoTime)))
-  (defn msecs [start end] (/ (double (- end start)) 1000000.0))
-
-  (defn edn-rt
-    [form]
-    (let [start (now)
-          str (pr-str form)
-          mid (now)
-          form2 (edn/read-string str)
-          end (now)]
-      {:form form2
-       :write (msecs start mid)
-       :read (msecs mid end)}))
-
-  (defn fressian-rt
-    [form]
-    (let [start (now)
-          bytes (f/write form)
-          mid (now)
-          form2 (f/read bytes)
-          end (now)]
-      {:form form2
-       :write (msecs start mid)
-       :read (msecs mid end)}))
-
-  (defn transit-js-rt
-    [form]
-    (let [start (now)
-          out (ByteArrayOutputStream. 10000)
-          _ (w/write (w/js-writer out) form)
-          mid (now)
-          in (ByteArrayInputStream. (.toByteArray out))
-          form2 (r/read (r/js-reader in))
-          end (now)]
-      {:form form2
-       :write (msecs start mid)
-       :read (msecs mid end)}))
-
-  (defn transit-mp-rt
-    [form]
-    (let [start (now)
-          out (ByteArrayOutputStream. 10000)
-          _ (w/write (w/mp-writer out) form)
-          mid (now)
-          in (ByteArrayInputStream. (.toByteArray out))
-          form2 (r/read (r/mp-reader in))
-          end (now)]
-      {:form form2
-       :write (msecs start mid)
-       :read (msecs mid end)}))
-
-
-  (defn rt
-    [form]
-    {:edn (edn-rt form)
-     :fressian (fressian-rt form)
-     :transit-js (transit-js-rt form)
-     :transit-mp (transit-mp-rt form)})
-
-  (defn rt-summary
-    [form]
-    (let [res (rt form)]
-      (clojure.pprint/pprint (into {} (map (fn [[k v]] [k (dissoc v :form)]) res)))))
-
-
 
   (def out (ByteArrayOutputStream. 2000))
 

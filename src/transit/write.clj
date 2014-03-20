@@ -153,7 +153,9 @@
   (emit-boolean [^Packer p b as-map-key cache] (.write p b))
 
   (emit-integer [^Packer p i as-map-key cache]
-    (if (or (string? i) (> i MSGPACK_INT_MAX) (< i MSGPACK_INT_MIN))
+    ;; using Long MAX and MIN because i is passed to write as long
+    ;; should be able to use MSGPACK_INT_MAX/MIN - ???
+    (if (or (string? i) (> i Long/MAX_VALUE) (< i Long/MIN_VALUE))
       (emit-string p ESC \i i as-map-key cache)
       (.write p ^long i)))
 

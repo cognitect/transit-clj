@@ -13,6 +13,7 @@
            [org.apache.commons.codec.binary Base64]
            [java.io InputStream OutputStream EOFException]))
 
+(set! *warn-on-reflection* true)
 
 (def decode-fns (atom {":" #(keyword %)
                        "i" #(try
@@ -38,7 +39,25 @@
 (defn decode
   [tag rep]
   ;;(prn "decode" tag rep)
-  (when-let [decode-fn (@decode-fns tag)]
+  (case tag
+      ":" #(keyword %)
+      "i" #(try
+             (Long/parseLong %)
+             (catch NumberFormatException _ (clojure.edn/read-string %)))
+      "d" #(Double. ^String %)
+      "m" #(java.math.BigDecimal. ^String %)
+      "t" #(if (string? %)
+             (java.util.Date. ^String %)
+             (java.util.Date. ^long %))
+      "u" #(if (string? %)
+             (java.util.UUID/fromString %)
+             (java.util.UUID. (first %) (second %)))
+      "r" #(java.net.URI. %)
+      "$" #(symbol %)
+      "set" #(reduce (fn [s v] (conj s v)) #{} %)
+      "list" #(reverse (into '() %))
+      nil)
+  #_(when-let [decode-fn (@decode-fns tag)]
     (decode-fn rep)))
 
 (defprotocol ReadCache
@@ -49,13 +68,13 @@
   ;;(prn "parse-str before" s)
   (let [res (if (and (string? s) (> (.length ^String s) 1))
               ;; any way to use w/ESC, et al?
-              (case (.charAt s 0)
+              (case (.charAt ^String s 0)
                 \~
-                (case (.charAt s 1)
+                (case (.charAt ^String s 1)
                   \~ (subs s 1) ;; w/ESC
                   \^ (subs s 1) ;; w/SUB
                   \` (subs s 1) ;; w/RESERVED
-                  \# s ;; w/TAG
+                  \# s          ;; w/TAG
                   (if-let [decoded (decode (subs s 1 2) (subs s 2))]
                     decoded
                     s))
@@ -65,13 +84,13 @@
     res))
 
 (defn parse-tagged-map
-  [m]
+  [^java.util.Map m]
   (let [entries (.entrySet m)
         iter (.iterator entries)
         entry (when (.hasNext iter) (.next iter))
-        key (when entry (.getKey entry))]
-    (if (and entry (string? key) (> (.length ^String key) 1) (= w/TAG ^Character (.charAt key 1)))
-      (if-let [decoded (decode (subs key 2) (.getValue entry))]
+        key (when entry (.getKey ^java.util.Map$Entry entry))]
+    (if (and entry (string? key) (> (.length ^String key) 1) (= w/TAG ^Character (.charAt ^String key 1)))
+      (if-let [decoded (decode (subs key 2) (.getValue ^java.util.Map$Entry entry))]
         decoded
         m)
       m)))
