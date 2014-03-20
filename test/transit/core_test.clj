@@ -1,4 +1,4 @@
-(ns transit-clj.core-test
+(ns transit.core-test
   (:require [clojure.test :refer :all]
             [transit-clj.core :refer :all]))
 
