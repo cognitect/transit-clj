@@ -23,7 +23,7 @@
 (def decode-fns (atom {":" #(keyword %)
                        "?" #(Boolean. ^String %)
                        "b" #(Base64/decodeBase64 ^bytes %)
-                       "_" #(identity nil)
+                       "_" (fn [_] nil)
                        "i" #(try
                               (Long/parseLong %)
                               (catch NumberFormatException _ (read-int-str %)))
