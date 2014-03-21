@@ -96,7 +96,16 @@
   (let [res (rt-raw form)]
     (into {} (map (fn [[k v]] [k (dissoc v :form)]) res))))
 
+(defn rt-summary-warm
+  [n form]
+  (dotimes [i n]
+    (prn i)
+    (rt-summary form))
+  (rt-summary form))
+
 (comment
 
 
 )
+
+
