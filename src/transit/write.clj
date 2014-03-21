@@ -375,7 +375,7 @@
   (str-rep [r] (str (rep r)))
 
   java.math.BigDecimal
-  (tag [bigdec] \m)
+  (tag [bigdec] \f)
   (rep [bigdec] (str bigdec))
   (str-rep [bigdec] (rep bigdec))
 

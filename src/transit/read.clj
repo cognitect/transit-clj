@@ -15,12 +15,17 @@
 
 (set! *warn-on-reflection* true)
 
+(defn read-int-str
+  [s]
+  (let [o (edn/read-string s)]
+    (when (number? o) o)))
+
 (def decode-fns (atom {":" #(keyword %)
                        "i" #(try
                               (Long/parseLong %)
-                              (catch NumberFormatException _ (clojure.edn/read-string %)))
+                              (catch NumberFormatException _ (read-int-str %)))
                        "d" #(Double. ^String %)
-                       "m" #(java.math.BigDecimal. ^String %)
+                       "f" #(java.math.BigDecimal. ^String %)
                        "t" #(if (string? %)
                               (java.util.Date. ^String %)
                               (java.util.Date. ^long %))
@@ -149,8 +154,7 @@
       JsonToken/VALUE_NUMBER_INT
       (try 
         (.getLongValue jp) ;; always read as long, coerce to string if too big
-        (catch JsonParseException _
-          (parse-str (str w/ESC (w/tag 0) (.getText jp)))))
+        (catch JsonParseException _ (read-int-str (.getText jp))))
       JsonToken/VALUE_NUMBER_FLOAT
       (.getDoubleValue jp) ;; always read as double
       JsonToken/VALUE_TRUE
