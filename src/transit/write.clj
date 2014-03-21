@@ -415,7 +415,7 @@
 (deftype Writer [em])
 
 (defn js-writer [^OutputStream out]
-  (Writer. (.createJsonGenerator (JsonFactory.) out)))
+  (Writer. (.createGenerator (JsonFactory.) out)))
 
 (defn mp-writer [^OutputStream out]
   (Writer. (.createPacker (MessagePack.) out)))

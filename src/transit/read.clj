@@ -21,6 +21,9 @@
     (when (number? o) o)))
 
 (def decode-fns (atom {":" #(keyword %)
+                       "?" #(Boolean. ^String %)
+                       "b" #(Base64/decodeBase64 ^bytes %)
+                       "_" #(identity nil)
                        "i" #(try
                               (Long/parseLong %)
                               (catch NumberFormatException _ (read-int-str %)))
@@ -41,29 +44,10 @@
   [tag fn]
   (swap! decode-fns assoc tag fn))
 
-(defn decode
-  [tag rep]
+(defn decode-fn
+  [tag]
   ;;(prn "decode" tag rep)
-  (case tag
-      ":" #(keyword %)
-      "i" #(try
-             (Long/parseLong %)
-             (catch NumberFormatException _ (clojure.edn/read-string %)))
-      "d" #(Double. ^String %)
-      "m" #(java.math.BigDecimal. ^String %)
-      "t" #(if (string? %)
-             (java.util.Date. ^String %)
-             (java.util.Date. ^long %))
-      "u" #(if (string? %)
-             (java.util.UUID/fromString %)
-             (java.util.UUID. (first %) (second %)))
-      "r" #(java.net.URI. %)
-      "$" #(symbol %)
-      "set" #(reduce (fn [s v] (conj s v)) #{} %)
-      "list" #(reverse (into '() %))
-      nil)
-  #_(when-let [decode-fn (@decode-fns tag)]
-    (decode-fn rep)))
+  (@decode-fns tag))
 
 (defprotocol ReadCache
   (cache-read [cache str as-map-key]))
@@ -80,8 +64,8 @@
                   \^ (subs s 1) ;; w/SUB
                   \` (subs s 1) ;; w/RESERVED
                   \# s          ;; w/TAG
-                  (if-let [decoded (decode (subs s 1 2) (subs s 2))]
-                    decoded
+                  (if-let [decode-fn (decode-fn (subs s 1 2))]
+                    (decode-fn (subs s 2))
                     s))
                 s)
               s)]
@@ -95,8 +79,8 @@
         entry (when (.hasNext iter) (.next iter))
         key (when entry (.getKey ^java.util.Map$Entry entry))]
     (if (and entry (string? key) (> (.length ^String key) 1) (= w/TAG ^Character (.charAt ^String key 1)))
-      (if-let [decoded (decode (subs key 2) (.getValue ^java.util.Map$Entry entry))]
-        decoded
+      (if-let [decode-fn (decode-fn (subs key 2))]
+        (decode-fn (.getValue ^java.util.Map$Entry entry))
         m)
       m)))
 
@@ -226,7 +210,7 @@
 (deftype Reader [r])
 
 (defn js-reader [^InputStream stm]
-  (Reader. (.createJsonParser (JsonFactory.) stm)))
+  (Reader. (.createParser (JsonFactory.) stm)))
 
 (defn mp-reader [^InputStream stm]
   (Reader. (.createUnpacker (MessagePack.) stm)))
