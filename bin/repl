@@ -1,0 +1,1 @@
+java -server -Xms1g -Xmx1g -cp `lein classpath` clojure.main -r
