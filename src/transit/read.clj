@@ -11,7 +11,7 @@
            [org.msgpack.unpacker Unpacker MessagePackUnpacker]
            [org.msgpack.type Value MapValue ArrayValue RawValue ValueType]
            [org.apache.commons.codec.binary Base64]
-           [java.io InputStream OutputStream EOFException]))
+           [java.io InputStream EOFException]))
 
 (set! *warn-on-reflection* true)
 
@@ -114,14 +114,14 @@
 (defn read-cache [] (ReadCacheImpl. 0 (make-array Object w/MAX_CACHE_ENTRIES)))
 
 (defprotocol Parser
-  (parse [p cache])
+  (unmarshal [p cache])
   (parse-val [p as-map-key cache])
   (parse-map [p as-map-key cache])
   (parse-array [p as-map-key cache]))
 
 (extend-protocol Parser
   JsonParser
-  (parse [^JsonParser jp cache]
+  (unmarshal [^JsonParser jp cache]
     (when (.nextToken jp) (parse-val jp false cache)))
 
   (parse-val [^JsonParser jp as-map-key cache]
@@ -167,7 +167,7 @@
 
 (extend-protocol Parser
   MessagePackUnpacker
-  (parse [^MessagePackUnpacker mup cache] (parse-val mup false cache))
+  (unmarshal [^MessagePackUnpacker mup cache] (parse-val mup false cache))
 
   (parse-val [^MessagePackUnpacker mup as-map-key cache]
     (try 
@@ -207,14 +207,30 @@
        (.readArrayEnd mup false)
        res))))
 
-(deftype Reader [r])
+(deftype Reader [unmarshaler])
 
-(defn js-reader [^InputStream stm]
-  (Reader. (.createParser (JsonFactory.) stm)))
+(defprotocol Readerable
+  (make-reader [_ type]))
 
-(defn mp-reader [^InputStream stm]
-  (Reader. (.createUnpacker (MessagePack.) stm)))
+(extend-protocol Readerable
+  InputStream
+  (make-reader [^InputStream stm type]
+    (Reader. 
+     (case type
+       :json (.createParser (JsonFactory.) stm)
+       :msgpack (.createUnpacker (MessagePack.) stm))))
+  java.io.Reader
+  (make-reader [^java.io.Reader r type]
+    (Reader.
+     (case type
+       :json (.createParser (JsonFactory.) r)
+       :msgpack (throw (ex-info "Cannot create :msgpack reader on top of java.io.Reader, must use java.io.InputStream" {}))))))
+
+(defn reader [o type]
+  (if-let [t (#{:json :msgpack} type)]
+    (make-reader o t)
+    (throw (ex-info "Type must be :json or :msgpack" {:type type}))))
 
 (defn read [^Reader reader]
-  (parse (.r reader) (read-cache)))
+  (unmarshal (.unmarshaler reader) (read-cache)))
 

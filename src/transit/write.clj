@@ -92,7 +92,8 @@
   (map-size [em m])
   (emit-map-start [em size])
   (emit-map-end [em])
-  (flush-writer [em]))
+  (flush-writer [em])
+  (prefers-strings [em]))
 
 (def JSON_INT_MAX (Math/pow 2 53))
 (def JSON_INT_MIN (- 0 JSON_INT_MAX))
@@ -137,7 +138,8 @@
   (emit-map-start [^JsonGenerator jg _] (.writeStartObject jg))
   (emit-map-key [^JsonGenerator jg s] (.writeFieldName jg ^String s))
   (emit-map-end [^JsonGenerator jg] (.writeEndObject jg))
-  (flush-writer [^JsonGenerator jg] (.flush jg)))
+  (flush-writer [^JsonGenerator jg] (.flush jg))
+  (prefers-strings [_] true))
 
 (def MSGPACK_INT_MAX (Math/pow 2 64))
 (def MSGPACK_INT_MIN (- 0 MSGPACK_INT_MAX))
@@ -171,7 +173,8 @@
   (emit-map-start [^Packer p size] (.writeMapBegin p size))
   (emit-map-key [^Packer p s] (.write p s))
   (emit-map-end [^Packer p] (.writeMapEnd p))
-  (flush-writer [_]))
+  (flush-writer [_])
+  (prefers-strings [_] false))
 
 (declare marshal)
 
@@ -254,7 +257,7 @@
     (let [rep (rep o)]
       (if (string? rep)
         (emit-string em ESC tag rep as-map-key cache)
-        (if as-map-key
+        (if (or as-map-key (prefers-strings em))
           (let [rep (str-rep o)]
             (if (string? rep)
               (emit-string em ESC tag rep as-map-key cache)
@@ -266,6 +269,7 @@
 
 (defn marshal
   [em o as-map-key cache]
+  (prn "marshal" o (tag o) (rep o))
   (if-let [tag (tag o)]
     (let [rep (rep o)]
       ;;(prn "marshal" tag rep)
@@ -412,18 +416,37 @@
   (str-rep [s] nil)
 )
 
-(deftype Writer [em])
+(deftype Writer [marshaler])
 
-(defn js-writer [^OutputStream out]
-  (Writer. (.createGenerator (JsonFactory.) out)))
+(defprotocol Writerable
+  (make-writer [_ type]))
 
-(defn mp-writer [^OutputStream out]
-  (Writer. (.createPacker (MessagePack.) out)))
+(extend-protocol Writerable
+  OutputStream
+  (make-writer [^OutputStream stm type]
+    (Writer. 
+     (case type
+       :json (.createGenerator (JsonFactory.) stm)
+       :msgpack (.createPacker (MessagePack.) stm))))
+  java.io.Writer
+  (make-writer [^java.io.Writer w type]
+    (Writer.
+     (case type
+       :json (.createGenerator (JsonFactory.) w)
+       :msgpack (throw (ex-info "Cannot create :msgpack writer on top of java.io.Writer, must use java.io.OutputStream" {}))))))
+
+(defn writer [o type]
+  (if-let [t (#{:json :msgpack} type)]
+    (make-writer o t)
+    (throw (ex-info "Type must be :json or :msgpack" {:type type}))))
 
 (defn write [^Writer writer o]
-  (marshal (.em writer) o false (write-cache))
+  (prn "write" o)
+  (marshal (.marshaler writer) o false (write-cache))
   ;; can we configure JsonGenerator to automatically flush writes?
-  (flush-writer (.em writer)))
+  (flush-writer (.marshaler writer)))
+
+
 
 
 

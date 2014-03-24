@@ -8,9 +8,9 @@
 
   (def out (ByteArrayOutputStream. 2000))
 
-  (def w (w/js-writer out))
+  (def w (w/writer out :json))
 
-  (def w (w/mp-writer out))
+  (def w (w/writer out :msgpack))
 
   (w/write w "foo")
   (w/write w 10)
@@ -24,35 +24,33 @@
 
   (def in (ByteArrayInputStream. (.toByteArray out)))
 
-  (def r (r/js-reader in))
+  (def r (r/reader in :json))
 
-  (def r (r/mp-reader in))
+  (def r (r/reader in :msgpack))
 
   (r/read r)
+
+  ;; extensibility
 
   (defrecord Point [x y])
 
   (defrecord Circle [c r])
 
-  (extend-protocol datomic.marshal.encode/Encoder
+  (extend-protocol transit.write/Handler
     Point
     (tag [_] "point")
-    (rep [p] (datomic.marshal.encode/as-tag :array [(.x p) (.y p)]))
+    (rep [p] (transit.write/as-tag :array [(.x p) (.y p)] nil))
+    (str-rep [_] nil)
     Circle
     (tag [_] "circle")
-    (rep [c] (datomic.marshal.encode/as-tag :array [(.c c) (.r c)])))
+    (rep [c] (transit.write/as-tag :array [(.c c) (.r c)] nil))
+    (str-rep [_] nil))
 
-  (extend-protocol datomic.marshal.json/TagRep
-    Point
-    (tag [_] "point")
-    (rep [p] (datomic.marshal.encode/as-tag :array [(.x p) (.y p)]))
-    Circle
-    (tag [_] "circle")
-    (rep [c] (datomic.marshal.encode/as-tag :array [(.c c) (.r c)])))
+  (r/register-decode-fn "point" (fn [[x y]] (prn "making a point") (Point. x y)))
 
-  (enc/register-decode-fn "point" (fn [[x y]] (prn "making a point") (Point. x y)))
-
-  (enc/register-decode-fn "circle" (fn [[c r]] (prn "making a circle") (Circle. c r)))
+  (r/register-decode-fn "circle" (fn [[c r]] (prn "making a circle") (Circle. c r)))
 
   (w/write w (Point. 10 20))
-  (w/write w (Circle. (Point. 10 20) 30)))
+  (w/write w (Circle. (Point. 10 20) 30))
+
+)
