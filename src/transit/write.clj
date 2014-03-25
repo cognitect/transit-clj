@@ -269,7 +269,7 @@
 
 (defn marshal
   [em o as-map-key cache]
-  (prn "marshal" o (tag o) (rep o))
+  ;;(prn "marshal" o (tag o) (rep o))
   (if-let [tag (tag o)]
     (let [rep (rep o)]
       ;;(prn "marshal" tag rep)
@@ -441,7 +441,6 @@
     (throw (ex-info "Type must be :json or :msgpack" {:type type}))))
 
 (defn write [^Writer writer o]
-  (prn "write" o)
   (marshal (.marshaler writer) o false (write-cache))
   ;; can we configure JsonGenerator to automatically flush writes?
   (flush-writer (.marshaler writer)))
