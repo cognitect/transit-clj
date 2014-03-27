@@ -285,6 +285,11 @@
         (emit-encoded em tag o as-map-key cache)))
     (throw (ex-info "Not supported" {:o o :type (type o)}))))
 
+(defn stringable-keys?
+  [m]
+  (let [ks (keys m)]
+    (every? #(char? (tag %)) ks)))
+
 (extend-protocol Handler
 
   (type (byte-array 0))
@@ -348,8 +353,10 @@
   (str-rep [d] (str d))
 
   java.util.Map
-  (tag [_] :map)
-  (rep [m] (.entrySet m))
+  (tag [m] (if (stringable-keys? m) :map "cmap"))
+  (rep [m] (if (stringable-keys? m)
+             (.entrySet m)
+             (as-tag :array (mapcat identity (.entrySet m)) nil)))
   (str-rep [_] nil)
 
   java.util.List
@@ -374,9 +381,9 @@
   (str-rep [kw] (rep kw))
 
   clojure.lang.Ratio
-  (tag [r] \d)
-  (rep [r] (.doubleValue r))
-  (str-rep [r] (str (rep r)))
+  (tag [r] "ratio")
+  (rep [r] (as-tag :array [(numerator r) (denominator r)] nil))
+  (str-rep [_] nil)
 
   java.math.BigDecimal
   (tag [bigdec] \f)
@@ -386,7 +393,7 @@
   java.util.Date
   (tag [inst] \t)
   (rep [inst] (.getTime inst))
-  (str-rep [inst] (str inst))
+  (str-rep [inst] (subs (pr-str inst) 7 36))
 
   java.util.UUID
   (tag [uuid] \u)

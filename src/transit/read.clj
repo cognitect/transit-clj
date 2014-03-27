@@ -24,13 +24,14 @@
                        "?" #(Boolean. ^String %)
                        "b" #(Base64/decodeBase64 ^bytes %)
                        "_" (fn [_] nil)
+                       "c" #(.charAt ^String % 0)
                        "i" #(try
                               (Long/parseLong %)
                               (catch NumberFormatException _ (read-int-str %)))
                        "d" #(Double. ^String %)
                        "f" #(java.math.BigDecimal. ^String %)
                        "t" #(if (string? %)
-                              (java.util.Date. ^String %)
+                              (clojure.instant/read-instant-date %)
                               (java.util.Date. ^long %))
                        "u" #(if (string? %)
                               (java.util.UUID/fromString %)
@@ -38,7 +39,10 @@
                        "r" #(java.net.URI. %)
                        "$" #(symbol %)
                        "set" #(reduce (fn [s v] (conj s v)) #{} %)
-                       "list" #(reverse (into '() %))}))
+                       "list" #(reverse (into '() %))
+                       "cmap" #(reduce (fn [m me] (assoc m (first me) (second me)))
+                                       {} (partition 2 %))
+                       "ratio" #(/ (first %) (second %))}))
 
 (defn register-decode-fn
   [tag fn]
@@ -126,44 +130,49 @@
 
   (parse-val [^JsonParser jp as-map-key cache]
     ;;(prn "parse-val" (.getCurrentToken jp))
-    (condp = (.getCurrentToken jp)
-      JsonToken/START_OBJECT
-      (parse-tagged-map (parse-map jp as-map-key cache))
-      JsonToken/START_ARRAY
-      (parse-array jp as-map-key cache)
-      JsonToken/FIELD_NAME
-      (parse-str (cache-read cache (.getText jp) as-map-key))
-      JsonToken/VALUE_STRING
-      (parse-str (cache-read cache (.getText jp) as-map-key))
-      JsonToken/VALUE_NUMBER_INT
-      (try 
-        (.getLongValue jp) ;; always read as long, coerce to string if too big
-        (catch JsonParseException _ (read-int-str (.getText jp))))
-      JsonToken/VALUE_NUMBER_FLOAT
-      (.getDoubleValue jp) ;; always read as double
-      JsonToken/VALUE_TRUE
-      (.getBooleanValue jp)
-      JsonToken/VALUE_FALSE
-      (.getBooleanValue jp)
-      JsonToken/VALUE_NULL
-      nil))
+    (let [res (condp = (.getCurrentToken jp)
+                JsonToken/START_OBJECT
+                (parse-tagged-map (parse-map jp as-map-key cache))
+                JsonToken/START_ARRAY
+                (parse-array jp as-map-key cache)
+                JsonToken/FIELD_NAME
+                (parse-str (cache-read cache (.getText jp) as-map-key))
+                JsonToken/VALUE_STRING
+                (parse-str (cache-read cache (.getText jp) as-map-key))
+                JsonToken/VALUE_NUMBER_INT
+                (try 
+                  (.getLongValue jp) ;; always read as long, coerce to string if too big
+                  (catch JsonParseException _ (read-int-str (.getText jp))))
+                JsonToken/VALUE_NUMBER_FLOAT
+                (.getDoubleValue jp) ;; always read as double
+                JsonToken/VALUE_TRUE
+                (.getBooleanValue jp)
+                JsonToken/VALUE_FALSE
+                (.getBooleanValue jp)
+                JsonToken/VALUE_NULL
+                nil)]
+      ;;(prn "parse-val" res)
+      res))
 
   (parse-map [^JsonParser jp _ cache]
     (persistent!
-     (let [res (transient {})]
-       (while (not= (.nextToken jp) JsonToken/END_OBJECT)
+     (loop [tok (.nextToken jp)
+            res (transient {})]
+       (if (not= tok JsonToken/END_OBJECT)
          (let [k (parse-val jp true cache)
                _ (.nextToken jp)
                v (parse-val jp false cache)]
-           (assoc! res k v)))
-       res)))
+           (recur (.nextToken jp) (assoc! res k v)))
+         res))))
 
   (parse-array [^JsonParser jp _ cache]
     (persistent!
-     (let [res (transient [])]
-       (while (not= (.nextToken jp) JsonToken/END_ARRAY) 
-         (conj! res (parse-val jp false cache)))
-       res))))
+     (loop [tok (.nextToken jp)
+            res (transient [])]
+       (if (not= tok JsonToken/END_ARRAY)
+         (let [item (parse-val jp false cache)]
+           (recur (.nextToken jp) (conj! res item)))
+         res)))))
 
 (extend-protocol Parser
   MessagePackUnpacker
@@ -192,20 +201,22 @@
 
   (parse-map [^MessagePackUnpacker mup _ cache]
     (persistent!
-     (let [res (transient {})]
-       (dotimes [_ (.readMapBegin mup)]
-         (assoc! res (parse-val mup true cache) (parse-val mup false cache)))
-       (.readMapEnd mup false)
-       res)))
+     (loop [remaining (.readMapBegin mup)
+            res (transient {})]
+       (if-not (zero? remaining)
+         (recur (dec remaining)
+                (assoc! res (parse-val mup true cache) (parse-val mup false cache)))
+         res))))
 
   (parse-array
     [^MessagePackUnpacker mup _ cache]
     (persistent! 
-     (let [res (transient [])]
-       (dotimes [_ (.readArrayBegin mup)]
-         (conj! res (parse-val mup false cache)))
-       (.readArrayEnd mup false)
-       res))))
+     (loop [remaining (.readArrayBegin mup)
+            res (transient [])]
+       (if-not (zero? remaining)
+         (recur (dec remaining)
+                (conj! res (parse-val mup false cache)))
+         res)))))
 
 (deftype Reader [unmarshaler])
 
