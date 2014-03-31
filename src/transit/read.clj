@@ -126,7 +126,8 @@
 (extend-protocol Parser
   JsonParser
   (unmarshal [^JsonParser jp cache]
-    (when (.nextToken jp) (parse-val jp false cache)))
+    (when (.nextToken jp)
+      (nth (parse-val jp false cache) 0)))
 
   (parse-val [^JsonParser jp as-map-key cache]
     ;;(prn "parse-val" (.getCurrentToken jp))

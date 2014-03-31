@@ -93,7 +93,8 @@
   (emit-map-start [em size])
   (emit-map-end [em])
   (flush-writer [em])
-  (prefers-strings [em]))
+  (prefers-strings [em])
+  (wrap [em o]))
 
 (def JSON_INT_MAX (Math/pow 2 53))
 (def JSON_INT_MIN (- 0 JSON_INT_MAX))
@@ -139,7 +140,8 @@
   (emit-map-key [^JsonGenerator jg s] (.writeFieldName jg ^String s))
   (emit-map-end [^JsonGenerator jg] (.writeEndObject jg))
   (flush-writer [^JsonGenerator jg] (.flush jg))
-  (prefers-strings [_] true))
+  (prefers-strings [_] true)
+  (wrap [_ o] [o]))
 
 (def MSGPACK_INT_MAX (Math/pow 2 64))
 (def MSGPACK_INT_MIN (- 0 MSGPACK_INT_MAX))
@@ -174,7 +176,8 @@
   (emit-map-key [^Packer p s] (.write p s))
   (emit-map-end [^Packer p] (.writeMapEnd p))
   (flush-writer [_])
-  (prefers-strings [_] false))
+  (prefers-strings [_] false)
+  (wrap [_ o] o))
 
 (declare marshal)
 
@@ -448,9 +451,10 @@
     (throw (ex-info "Type must be :json or :msgpack" {:type type}))))
 
 (defn write [^Writer writer o]
-  (marshal (.marshaler writer) o false (write-cache))
-  ;; can we configure JsonGenerator to automatically flush writes?
-  (flush-writer (.marshaler writer)))
+  (let [m (.marshaler writer)]
+    (marshal m (wrap m o) false (write-cache))
+    ;; can we configure JsonGenerator to automatically flush writes?
+    (flush-writer (.marshaler writer))))
 
 
 
