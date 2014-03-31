@@ -207,7 +207,9 @@
        (if-not (zero? remaining)
          (recur (dec remaining)
                 (assoc! res (parse-val mup true cache) (parse-val mup false cache)))
-         res))))
+         (do
+           (.readMapEnd mup true)
+           res)))))
 
   (parse-array
     [^MessagePackUnpacker mup _ cache]
@@ -217,7 +219,9 @@
        (if-not (zero? remaining)
          (recur (dec remaining)
                 (conj! res (parse-val mup false cache)))
-         res)))))
+         (do
+           (.readArrayEnd mup true)
+           res))))))
 
 (deftype Reader [unmarshaler])
 
