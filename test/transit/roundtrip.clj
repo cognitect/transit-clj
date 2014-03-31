@@ -23,6 +23,7 @@
           form2 (read-fn tmp)
           end (now)]
       {:form form2
+       :same (= form form2)
        :write (msecs start mid)
        :read (msecs mid end)})))
 
@@ -35,26 +36,26 @@
   ((rt f/write f/read) form))
 
 (defn transit-writer
-  [writer-fn]
+  [type]
   (fn [form]
     (let [out (ByteArrayOutputStream. 10000)
-          w (writer-fn out)]
+          w (w/writer out type)]
       (w/write w form)
       (.toByteArray out))))
 
 (defn transit-reader
-  [reader-fn]
+  [type]
   (fn [bytes]
-    (let [r (reader-fn (ByteArrayInputStream. bytes))]
+    (let [r (r/reader (ByteArrayInputStream. bytes) type)]
       (r/read r))))
 
 (defn transit-js-rt
   [form]
-  ((rt (transit-writer w/js-writer) (transit-reader r/js-reader)) form))
+  ((rt (transit-writer :json) (transit-reader :json)) form))
 
 (defn transit-mp-rt
   [form]
-  ((rt (transit-writer w/mp-writer) (transit-reader r/mp-reader)) form))
+  ((rt (transit-writer :msgpack) (transit-reader :msgpack)) form))
 
 (defn fake-js-reader
   [bytes]
@@ -76,11 +77,11 @@
 
 (defn transit-js-rt-fake-read
   [form]
-  ((rt (transit-writer w/js-writer) fake-js-reader) form))
+  ((rt (transit-writer :json) fake-js-reader) form))
 
 (defn transit-mp-rt-fake-read
   [form]
-  ((rt (transit-writer w/mp-writer) fake-mp-reader) form))
+  ((rt (transit-writer :msgpack) fake-mp-reader) form))
 
 (defn rt-raw
   [form]
@@ -88,8 +89,9 @@
    :fressian (fressian-rt form)
    :transit-js (transit-js-rt form)
    :transit-mp (transit-mp-rt form)
-   :transit-js-fake-read (transit-js-rt-fake-read form)
-   :transit-mp-fake-read (transit-mp-rt-fake-read form)})
+   ;;:transit-js-fake-read (transit-js-rt-fake-read form)
+   ;;:transit-mp-fake-read (transit-mp-rt-fake-read form)
+   })
 
 (defn rt-summary
   [form]

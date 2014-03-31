@@ -21,6 +21,7 @@
   (w/write w [{:a-key 1} {:a-key 2}])
   (w/write w [#{1 2} #{1 2}])
   (w/write w (int-array (range 10)))
+  (w/write w {[:a :b] 2})
 
   (def in (ByteArrayInputStream. (.toByteArray out)))
 
