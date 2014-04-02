@@ -12,8 +12,12 @@
 
 (set! *warn-on-reflection* true)
 
-(def ESC \~)
-(def SUB \^)
+(def ESC "~")
+(def SUB "^")
+(def TAG "#")
+(def RESERVED "`")
+(def ESC_TAG "~#")
+
 (def MIN_SIZE_CACHEABLE 3)
 (def MAX_CACHE_ENTRIES 94)
 (def BASE_CHAR_IDX 33)
@@ -22,10 +26,11 @@
   [^String str as-map-key]
   (and (> (.length str) MIN_SIZE_CACHEABLE)
        (or as-map-key
-           (and (= ESC ^Character (.charAt str 0))
-                (or (= \: ^Character (.charAt str 1))
-                    (= \$ ^Character (.charAt str 1))
-                    (= \# ^Character (.charAt str 1)))))))
+           (and (= ESC (subs str 0 1))
+                (let [c (subs str 1 2)]
+                  (or (= ":" c)
+                      (= "$" c)
+                      (= "#" c)))))))
 
 (defn idx->code
   [i]
@@ -55,17 +60,10 @@
 
 (defn write-cache [] (WriteCacheImpl. 0 {}))
 
-
-(def ESC \~)
-(def TAG \#)
-(def RESERVED \`)
-(def SUB \^) ;; Should not repeat this here
-(def ESC_TAG "~#")
-
 (defn escape
   [^String s]
   (if (> (.length s) 0)
-    (let [c ^Character (.charAt s 0)]
+    (let [c (subs s 0 1)]
       (if (or (= ESC c)
               (= SUB c)
               (= RESERVED c))
@@ -94,7 +92,7 @@
   (emit-map-end [em])
   (flush-writer [em])
   (prefers-strings [em])
-  (wrap [em o]))
+  (quote-scalars [em]))
 
 (def JSON_INT_MAX (Math/pow 2 53))
 (def JSON_INT_MIN (- 0 JSON_INT_MAX))
@@ -103,7 +101,7 @@
   JsonGenerator
   (emit-nil [^JsonGenerator jg as-map-key cache]
     (if as-map-key
-      (emit-string jg ESC \_ nil as-map-key cache)
+      (emit-string jg ESC "_" nil as-map-key cache)
       (.writeNull jg)))
 
   ;; could write string parts w/o combining them, but have to manage escaping,
@@ -116,21 +114,21 @@
 
   (emit-boolean [^JsonGenerator jg b as-map-key cache]
     (if as-map-key
-      (emit-string jg ESC \? b as-map-key cache)
+      (emit-string jg ESC "?" b as-map-key cache)
       (.writeBoolean jg b)))
 
   (emit-integer [^JsonGenerator jg i as-map-key cache]
     (if (or as-map-key (string? i) (> i JSON_INT_MAX) (< i JSON_INT_MIN))
-      (emit-string jg ESC \i i as-map-key cache)
+      (emit-string jg ESC "i" i as-map-key cache)
       (.writeNumber jg ^long i)))
 
   (emit-double [^JsonGeneragor jg d as-map-key cache]
     (if as-map-key
-      (emit-string jg ESC \d d as-map-key cache)
+      (emit-string jg ESC "d" d as-map-key cache)
       (.writeNumber jg ^double d)))
 
   (emit-binary [^JsonGeneragor jg b as-map-key cache]
-    (emit-string jg ESC \b (Base64/encodeBase64String b) as-map-key cache))
+    (emit-string jg ESC "b" (Base64/encodeBase64String b) as-map-key cache))
 
   (array-size [^JsonGenerator jg _] nil)
   (emit-array-start [^JsonGenerator jg _] (.writeStartArray jg))
@@ -141,7 +139,7 @@
   (emit-map-end [^JsonGenerator jg] (.writeEndObject jg))
   (flush-writer [^JsonGenerator jg] (.flush jg))
   (prefers-strings [_] true)
-  (wrap [_ o] [o]))
+  (quote-scalars [_] true))
 
 (def MSGPACK_INT_MAX (Math/pow 2 64))
 (def MSGPACK_INT_MIN (- 0 MSGPACK_INT_MAX))
@@ -160,13 +158,13 @@
     ;; using Long MAX and MIN because i is passed to write as long
     ;; should be able to use MSGPACK_INT_MAX/MIN - ???
     (if (or (string? i) (> i Long/MAX_VALUE) (< i Long/MIN_VALUE))
-      (emit-string p ESC \i i as-map-key cache)
+      (emit-string p ESC "i" i as-map-key cache)
       (.write p ^long i)))
 
   (emit-double [^Packer p d as-map-key cache] (.write p ^double d))
 
   (emit-binary [^Packer p b as-map-key cache]
-    (emit-string p ESC \b (Base64/encodeBase64String b) as-map-key cache))
+    (emit-string p ESC "b" (Base64/encodeBase64String b) as-map-key cache))
 
   (array-size [^Packer p iter] (count iter))
   (emit-array-start [^Packer p size] (.writeArrayBegin p size))
@@ -177,7 +175,7 @@
   (emit-map-end [^Packer p] (.writeMapEnd p))
   (flush-writer [_])
   (prefers-strings [_] false)
-  (wrap [_ o] o))
+  (quote-scalars [_] false))
 
 (declare marshal)
 
@@ -247,6 +245,17 @@
 
 (defn as-tag [tag rep str] (AsTag. tag rep str))
 
+(deftype Quote [o])
+
+(defn quoted [o] (Quote. o))
+
+(defn emit-quoted
+  [em rep _ cache]
+  (emit-map-start em 1)
+  (emit-string em ESC_TAG "'" nil true cache)
+  (marshal em rep false cache)
+  (emit-map-end em))
+
 (defn emit-tagged-map
   [em tag rep _ cache]
   (emit-map-start em 1)
@@ -256,7 +265,7 @@
 
 (defn emit-encoded
   [em tag o as-map-key cache]
-  (if (char? tag)
+  (if (= (.length ^String tag) 1)
     (let [rep (rep o)]
       (if (string? rep)
         (emit-string em ESC tag rep as-map-key cache)
@@ -264,10 +273,10 @@
           (let [rep (str-rep o)]
             (if (string? rep)
               (emit-string em ESC tag rep as-map-key cache)
-              (throw (ex-info "Cannot be encoded as string" {:tag tag :o o :type (type o)}))))
+              (throw (ex-info "Cannot be encoded as string" {:tag tag :rep rep :o o}))))
           (emit-tagged-map em tag rep as-map-key cache))))
     (if as-map-key
-      (throw (ex-info "Cannot be used as map key" {:tag tag :o o :type (type o)}))
+      (throw (ex-info "Cannot be used as map key" {:tag tag :rep rep :o o}))
       (emit-tagged-map em tag (rep o) as-map-key cache))))
 
 (defn marshal
@@ -277,94 +286,108 @@
     (let [rep (rep o)]
       ;;(prn "marshal" tag rep)
       (case tag
-        \_ (emit-nil em as-map-key cache)
-        \s (emit-string em nil nil (escape rep) as-map-key cache)
-        \? (emit-boolean em (boolean rep) as-map-key cache)
-        \i (emit-integer em rep as-map-key cache)
-        \d (emit-double em rep as-map-key cache)
-        \b (emit-binary em rep as-map-key cache)
-        :array (emit-array em rep as-map-key cache)
-        :map (emit-map em rep as-map-key cache)
+        "_" (emit-nil em as-map-key cache)
+        "s" (emit-string em nil nil (escape rep) as-map-key cache)
+        "?" (emit-boolean em (boolean rep) as-map-key cache)
+        "i" (emit-integer em rep as-map-key cache)
+        "d" (emit-double em rep as-map-key cache)
+        "b" (emit-binary em rep as-map-key cache)
+        "'" (emit-quoted em rep as-map-key cache)
+        "array" (emit-array em rep as-map-key cache)
+        "map" (emit-map em rep as-map-key cache)
         (emit-encoded em tag o as-map-key cache)))
+    (throw (ex-info "Not supported" {:o o :type (type o)}))))
+
+(defn marshal-top
+  [em o cache]
+  (if-let [^String tag (tag o)]
+    (marshal em
+             o
+             #_(if (and (quote-scalars em)
+                      (= (.length tag) 1))
+               (quoted o)
+               o)
+             false
+             cache)
     (throw (ex-info "Not supported" {:o o :type (type o)}))))
 
 (defn stringable-keys?
   [m]
   (let [ks (keys m)]
-    (every? #(char? (tag %)) ks)))
+    (every? #(= (.length ^String (tag %)) 1) ks)))
 
 (extend-protocol Handler
 
   (type (byte-array 0))
-  (tag [_] \b)
+  (tag [_] "b")
   (rep [bs] bs)
   (str-rep [_] nil)
 
   nil
-  (tag [_] \_)
+  (tag [_] "_")
   (rep [_] nil)
   (str-rep [_] nil)
 
   java.lang.String
-  (tag [_] \s)
+  (tag [_] "s")
   (rep [s] s)
   (str-rep [s] s)
 
   java.lang.Boolean
-  (tag [_] \?)
+  (tag [_] "?")
   (rep [b] b)
   (str-rep [b] (str b))
   
   java.lang.Byte
-  (tag [_] \i)
+  (tag [_] "i")
   (rep [b] b)
   (str-rep [b] (str b))
 
   java.lang.Short
-  (tag [_] \i)
+  (tag [_] "i")
   (rep [s] s)
   (str-rep [s] (str s))
 
   java.lang.Integer
-  (tag [_] \i)
+  (tag [_] "i")
   (rep [i] i)
   (str-rep [i] (str i))
 
   java.lang.Long
-  (tag [_] \i)
+  (tag [_] "i")
   (rep [l] l)
   (str-rep [l] (str l))
 
   java.math.BigInteger
-  (tag [_] \i)
+  (tag [_] "i")
   (rep [bi] bi)
   (str-rep [bi] (str bi))
 
   clojure.lang.BigInt
-  (tag [_] \i)
+  (tag [_] "i")
   (rep [bi] bi)
   (str-rep [bi] (str bi))
 
   java.lang.Float
-  (tag [_] \d)
+  (tag [_] "d")
   (rep [f] f)
   (str-rep [f] (str f))
 
   java.lang.Double
-  (tag [_] \d)
+  (tag [_] "d")
   (rep [d] d)
   (str-rep [d] (str d))
 
   java.util.Map
-  (tag [m] (if (stringable-keys? m) :map "cmap"))
+  (tag [m] (if (stringable-keys? m) "map" "cmap"))
   (rep [m] (if (stringable-keys? m)
              (.entrySet m)
-             (as-tag :array (mapcat identity (.entrySet m)) nil)))
+             (as-tag "array" (mapcat identity (.entrySet m)) nil)))
   (str-rep [_] nil)
 
   java.util.List
-  (tag [l] (if (seq? l) "list" :array))
-  (rep [l] (if (seq? l) (as-tag :array l nil) l))
+  (tag [l] (if (seq? l) "list" "array"))
+  (rep [l] (if (seq? l) (as-tag "array" l nil) l))
   (str-rep [_] nil)
 
   AsTag
@@ -372,57 +395,62 @@
   (rep [e] (.rep e))
   (str-rep [e] (.str e))
 
+  Quote
+  (tag [q] "'")
+  (rep [q] (rep (.o q)))
+  (str-rep [q] (str-rep (.o q)))
+
   java.lang.Object
-  (tag [o] (when (.isArray ^Class (type o)) :array))
+  (tag [o] (when (.isArray ^Class (type o)) "array"))
   (rep [o] (when (.isArray ^Class (type o)) o))
 
   ;; extensions
 
   clojure.lang.Keyword
-  (tag [kw] \:)
+  (tag [kw] ":")
   (rep [kw] (nsed-name kw))
   (str-rep [kw] (rep kw))
 
   clojure.lang.Ratio
   (tag [r] "ratio")
-  (rep [r] (as-tag :array [(numerator r) (denominator r)] nil))
+  (rep [r] (as-tag "array" [(numerator r) (denominator r)] nil))
   (str-rep [_] nil)
 
   java.math.BigDecimal
-  (tag [bigdec] \f)
+  (tag [bigdec] "f")
   (rep [bigdec] (str bigdec))
   (str-rep [bigdec] (rep bigdec))
 
   java.util.Date
-  (tag [inst] \t)
+  (tag [inst] "t")
   (rep [inst] (.getTime inst))
   (str-rep [inst] (subs (pr-str inst) 7 36))
 
   java.util.UUID
-  (tag [uuid] \u)
+  (tag [uuid] "u")
   (rep [uuid]
     [(.getMostSignificantBits uuid)
      (.getLeastSignificantBits uuid)])
   (str-rep [uuid] (str uuid))
 
   java.net.URI
-  (tag [uri] \r)
+  (tag [uri] "r")
   (rep [uri] (str uri))
   (str-rep [uri] (rep uri))
 
   clojure.lang.Symbol
-  (tag [sym] \$)
+  (tag [sym] "$")
   (rep [sym] (nsed-name sym))
   (str-rep [sym] (rep sym))
 
   java.lang.Character
-  (tag [c] \c)
+  (tag [c] "c")
   (rep [c] (str c))
   (str-rep [c] (rep c))
 
   java.util.Set
   (tag [s] "set")
-  (rep [s] (as-tag :array s nil))
+  (rep [s] (as-tag "array" s nil))
   (str-rep [s] nil)
 )
 
@@ -452,7 +480,7 @@
 
 (defn write [^Writer writer o]
   (let [m (.marshaler writer)]
-    (marshal m (wrap m o) false (write-cache))
+    (marshal-top m o (write-cache))
     ;; can we configure JsonGenerator to automatically flush writes?
     (flush-writer (.marshaler writer))))
 

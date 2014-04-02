@@ -20,7 +20,8 @@
   (let [o (edn/read-string s)]
     (when (number? o) o)))
 
-(def decode-fns (atom {":" #(keyword %)
+(def decode-fns (atom {"'" identity
+                       ":" #(keyword %)
                        "?" #(Boolean. ^String %)
                        "b" #(Base64/decodeBase64 ^bytes %)
                        "_" (fn [_] nil)
@@ -59,19 +60,23 @@
 (defn parse-str
   [s]
   ;;(prn "parse-str before" s)
-  (let [res (if (and (string? s) (> (.length ^String s) 1))
-              ;; any way to use w/ESC, et al?
-              (case (.charAt ^String s 0)
-                \~
-                (case (.charAt ^String s 1)
-                  \~ (subs s 1) ;; w/ESC
-                  \^ (subs s 1) ;; w/SUB
-                  \` (subs s 1) ;; w/RESERVED
-                  \# s          ;; w/TAG
-                  (if-let [decode-fn (decode-fn (subs s 1 2))]
-                    (decode-fn (subs s 2))
-                    s))
-                s)
+  (let [res (if (and (string? s)
+                     (> (.length ^String s) 1)
+                     (= w/ESC (subs ^String s 0 1)))
+              (let [c (subs s 1 2)]
+                (cond 
+                 (or (= w/ESC c)
+                     (= w/SUB c)
+                     (= w/RESERVED c))
+                 (subs s 1)
+
+                 (= w/TAG c)
+                 s
+
+                 :else
+                 (if-let [decode-fn (decode-fn (subs s 1 2))]
+                   (decode-fn (subs s 2))
+                   s)))
               s)]
     ;;(prn "parse-str after" res)
     res))
@@ -82,7 +87,7 @@
         iter (.iterator entries)
         entry (when (.hasNext iter) (.next iter))
         key (when entry (.getKey ^java.util.Map$Entry entry))]
-    (if (and entry (string? key) (> (.length ^String key) 1) (= w/TAG ^Character (.charAt ^String key 1)))
+    (if (and entry (string? key) (> (.length ^String key) 1) (= w/TAG (subs key 1 2)))
       (if-let [decode-fn (decode-fn (subs key 2))]
         (decode-fn (.getValue ^java.util.Map$Entry entry))
         m)
@@ -90,7 +95,7 @@
 
 (defn cache-code?
   [^String s]
-  (= w/SUB ^Character (.charAt s 0)))
+  (= w/SUB (subs s 0 1)))
 
 (defn code->idx
   [^String s]
@@ -126,8 +131,7 @@
 (extend-protocol Parser
   JsonParser
   (unmarshal [^JsonParser jp cache]
-    (when (.nextToken jp)
-      (nth (parse-val jp false cache) 0)))
+    (when (.nextToken jp) (parse-val jp false cache)))
 
   (parse-val [^JsonParser jp as-map-key cache]
     ;;(prn "parse-val" (.getCurrentToken jp))
