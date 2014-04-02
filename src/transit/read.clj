@@ -64,19 +64,14 @@
                      (> (.length ^String s) 1)
                      (= w/ESC (subs ^String s 0 1)))
               (let [c (subs s 1 2)]
-                (cond 
-                 (or (= w/ESC c)
-                     (= w/SUB c)
-                     (= w/RESERVED c))
-                 (subs s 1)
-
-                 (= w/TAG c)
-                 s
-
-                 :else
-                 (if-let [decode-fn (decode-fn (subs s 1 2))]
-                   (decode-fn (subs s 2))
-                   s)))
+                (case c
+                  "~" (subs s 1)
+                  "^" (subs s 1)
+                  "`" (subs s 1)
+                  "#" s
+                  (if-let [decode-fn (decode-fn (subs s 1 2))]
+                    (decode-fn (subs s 2))
+                    s)))
               s)]
     ;;(prn "parse-str after" res)
     res))
