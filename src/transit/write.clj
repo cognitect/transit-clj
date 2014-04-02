@@ -12,6 +12,8 @@
 
 (set! *warn-on-reflection* true)
 
+(declare marshal)
+
 (def ESC "~")
 (def SUB "^")
 (def TAG "#")
@@ -90,9 +92,9 @@
   (map-size [em m])
   (emit-map-start [em size])
   (emit-map-end [em])
+  (emit-quoted [em o cache])
   (flush-writer [em])
-  (prefers-strings [em])
-  (quote-scalars [em]))
+  (prefers-strings [em]))
 
 (def JSON_INT_MAX (Math/pow 2 53))
 (def JSON_INT_MIN (- 0 JSON_INT_MAX))
@@ -135,11 +137,14 @@
   (emit-array-end [^JsonGenerator jg] (.writeEndArray jg))
   (map-size [^JsonGenerator jg _] nil)
   (emit-map-start [^JsonGenerator jg _] (.writeStartObject jg))
-  (emit-map-key [^JsonGenerator jg s] (.writeFieldName jg ^String s))
   (emit-map-end [^JsonGenerator jg] (.writeEndObject jg))
+  (emit-quoted [^JsonGenerator jg o cache]
+    (emit-map-start jg 1)
+    (emit-string jg ESC_TAG "'" nil true cache)
+    (marshal jg o false cache)
+    (emit-map-end jg))
   (flush-writer [^JsonGenerator jg] (.flush jg))
-  (prefers-strings [_] true)
-  (quote-scalars [_] true))
+  (prefers-strings [_] true))
 
 (def MSGPACK_INT_MAX (Math/pow 2 64))
 (def MSGPACK_INT_MIN (- 0 MSGPACK_INT_MAX))
@@ -171,13 +176,11 @@
   (emit-array-end [^Packer p] (.writeArrayEnd p))
   (map-size [^Packer p iter] (count iter))
   (emit-map-start [^Packer p size] (.writeMapBegin p size))
-  (emit-map-key [^Packer p s] (.write p s))
   (emit-map-end [^Packer p] (.writeMapEnd p))
+  (emit-quoted [^Packer p o cache]
+    (marshal p o false cache))
   (flush-writer [_])
-  (prefers-strings [_] false)
-  (quote-scalars [_] false))
-
-(declare marshal)
+  (prefers-strings [_] false))
 
 (defn emit-ints
   [em ^ints src cache]
@@ -300,16 +303,14 @@
 
 (defn marshal-top
   [em o cache]
-  (if-let [^String tag (tag o)]
-    (marshal em
-             o
-             #_(if (and (quote-scalars em)
-                      (= (.length tag) 1))
+  (marshal em
+           (if-let [^String tag (tag o)]
+             (if (= (.length tag) 1)
                (quoted o)
                o)
-             false
-             cache)
-    (throw (ex-info "Not supported" {:o o :type (type o)}))))
+             (throw (ex-info "Not supported" {:o o :type (type o)})))
+           false
+           cache))
 
 (defn stringable-keys?
   [m]
