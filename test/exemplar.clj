@@ -65,13 +65,15 @@
   
   (write-exemplar "small_strings" "A vector of small strings" small-strings)
   
-  (write-exemplar "strings_tilde" "A vector of strings containing ~" (vmap #(str "~" %) small-strings))
+  (write-exemplar "strings_tilde" "A vector of strings starting with ~" (vmap #(str "~" %) small-strings))
 
-  (write-exemplar "strings_hash" "A vector of strings containing #" (vmap #(str "#" %) small-strings))
+  (write-exemplar "strings_hash" "A vector of strings starting with #" (vmap #(str "#" %) small-strings))
+
+  (write-exemplar "strings_hat" "A vector of strings starting with ^" (vmap #(str "^" %) small-strings))
   
   (write-exemplar "small_ints" "A vector of eleven small integers" (range-centered-on 0))
 
-  (apply write-exemplar "ints", "vector of ints" (range 128))
+  (write-exemplar "ints", "vector of ints" (range 128))
   
   (def interesting-ints 
     (vec
@@ -129,6 +131,8 @@
   (write-exemplar "map_simple" "A simple map" map-simple)
   (write-exemplar "map_mixed" "A mixed map" map-mixed)
   (write-exemplar "map_nested" "A nested map" map-nested)
+
+  (write-exemplar "map_string_keys" "A map with string keys" {"first" 1, "second" 2, "third" 3})
 
   (write-exemplar "map_numeric_keys" "A map with numeric keys" {1 "one", 2 "two"})
  
