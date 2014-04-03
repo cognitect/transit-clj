@@ -46,8 +46,7 @@
   WriteCache
   (cache-write [_ str as-map-key]
     ;;(prn "cache write before" idx cache s)
-    str
-    #_(let [res (if (and str (cacheable? str as-map-key))
+    (let [res (if (and str (cacheable? str as-map-key))
                 (if-let [val (get cache str)]
                   val
                   (do
@@ -449,35 +448,43 @@
   (str-rep [s] nil)
 )
 
-(deftype Writer [marshaler])
+(deftype Writer [marshaler cache])
 
 (defprotocol Writerable
-  (make-writer [_ type]))
+  (make-writer [_ type cache]))
 
 (extend-protocol Writerable
   OutputStream
-  (make-writer [^OutputStream stm type]
+  (make-writer [^OutputStream stm type cache]
     (Writer. 
      (case type
        :json (.createGenerator (JsonFactory.) stm)
-       :msgpack (.createPacker (MessagePack.) stm))))
+       :msgpack (.createPacker (MessagePack.) stm))
+     cache))
   java.io.Writer
-  (make-writer [^java.io.Writer w type]
+  (make-writer [^java.io.Writer w type cache]
     (Writer.
      (case type
        :json (.createGenerator (JsonFactory.) w)
-       :msgpack (throw (ex-info "Cannot create :msgpack writer on top of java.io.Writer, must use java.io.OutputStream" {}))))))
+       :msgpack (throw (ex-info "Cannot create :msgpack writer on top of java.io.Writer, must use java.io.OutputStream" {})))
+     cache)))
 
-(defn writer [o type]
-  (if-let [t (#{:json :msgpack} type)]
-    (make-writer o t)
-    (throw (ex-info "Type must be :json or :msgpack" {:type type}))))
+(defn writer
+  ([o type] (writer o type true))
+  ([o type cache]
+     (if-let [t (#{:json :msgpack} type)]
+       (make-writer o t cache)
+       (throw (ex-info "Type must be :json or :msgpack" {:type type})))))
 
 (defn write [^Writer writer o]
-  (let [m (.marshaler writer)]
-    (marshal-top m o (write-cache))
-    ;; can we configure JsonGenerator to automatically flush writes?
-    (flush-writer (.marshaler writer))))
+  (locking writer 
+    (let [m (.marshaler writer)]
+      (marshal-top m o (if (.cache writer)
+                         (write-cache)
+                         (reify WriteCache
+                           (cache-write [_ str _] str))))
+      ;; can we configure JsonGenerator to automatically flush writes?
+      (flush-writer m))))
 
 
 
