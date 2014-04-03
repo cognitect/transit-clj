@@ -102,11 +102,12 @@
     (let [res (if (and str (not (zero? (.length ^String str))))
                 (if (w/cacheable? str as-map-key)
                   (do 
-                    (when (= idx (dec w/MAX_CACHE_ENTRIES))
+                    (when (= idx w/MAX_CACHE_ENTRIES)
                       (set! idx 0))
-                    (aset ^objects cache idx (parse-str str))
-                    (set! idx (inc idx))
-                    str)
+                    (let [o (parse-str str)]
+                      (aset ^objects cache idx o)
+                      (set! idx (inc idx))
+                      o))
                   (if (cache-code? str)
                     (aget ^objects cache (code->idx str))
                     str))

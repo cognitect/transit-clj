@@ -50,7 +50,7 @@
                 (if-let [val (get cache str)]
                   val
                   (do
-                    (when (= idx (dec MAX_CACHE_ENTRIES))
+                    (when (= idx MAX_CACHE_ENTRIES)
                       (set! idx 0)
                       (set! cache {}))
                     (set! cache (assoc cache str (idx->code idx)))
