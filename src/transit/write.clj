@@ -46,7 +46,8 @@
   WriteCache
   (cache-write [_ str as-map-key]
     ;;(prn "cache write before" idx cache s)
-    (let [res (if (and str (cacheable? str as-map-key))
+    str
+    #_(let [res (if (and str (cacheable? str as-map-key))
                 (if-let [val (get cache str)]
                   val
                   (do
