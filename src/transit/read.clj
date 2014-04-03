@@ -81,7 +81,7 @@
         iter (.iterator entries)
         entry (when (.hasNext iter) (.next iter))
         key (when entry (.getKey ^java.util.Map$Entry entry))]
-    (if (and entry (string? key) (> (.length ^String key) 1) (= w/TAG (subs key 1 2)))
+    (if (and entry (string? key) (> (.length ^String key) 1) (= "#" (subs key 1 2)))
       (if-let [decode-fn (decode-fn (subs key 2))]
         (decode-fn (.getValue ^java.util.Map$Entry entry))
         m)

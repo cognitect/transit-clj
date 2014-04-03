@@ -252,13 +252,6 @@
 
 (defn quoted [o] (Quote. o))
 
-(defn emit-quoted
-  [em rep _ cache]
-  (emit-map-start em 1)
-  (emit-string em ESC_TAG "'" nil true cache)
-  (marshal em rep false cache)
-  (emit-map-end em))
-
 (defn emit-tagged-map
   [em tag rep _ cache]
   (emit-map-start em 1)
@@ -295,7 +288,7 @@
         "i" (emit-integer em rep as-map-key cache)
         "d" (emit-double em rep as-map-key cache)
         "b" (emit-binary em rep as-map-key cache)
-        "'" (emit-quoted em rep as-map-key cache)
+        "'" (emit-quoted em rep cache)
         "array" (emit-array em rep as-map-key cache)
         "map" (emit-map em rep as-map-key cache)
         (emit-encoded em tag o as-map-key cache)))
