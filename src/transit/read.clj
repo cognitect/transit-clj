@@ -222,39 +222,32 @@
            (.readArrayEnd mup true)
            res))))))
 
-(deftype Reader [unmarshaler cache])
+(deftype Reader [unmarshaler])
 
 (defprotocol Readerable
-  (make-reader [_ type cache]))
+  (make-reader [_ type]))
 
 (extend-protocol Readerable
   InputStream
-  (make-reader [^InputStream stm type cache]
+  (make-reader [^InputStream stm type]
     (Reader. 
      (case type
        :json (.createParser (JsonFactory.) stm)
-       :msgpack (.createUnpacker (MessagePack.) stm))
-     cache))
+       :msgpack (.createUnpacker (MessagePack.) stm))))
   java.io.Reader
-  (make-reader [^java.io.Reader r type cache]
+  (make-reader [^java.io.Reader r type]
     (Reader.
      (case type
        :json (.createParser (JsonFactory.) r)
-       :msgpack (throw (ex-info "Cannot create :msgpack reader on top of java.io.Reader, must use java.io.InputStream" {})))
-     cache)))
+       :msgpack (throw (ex-info "Cannot create :msgpack reader on top of java.io.Reader, must use java.io.InputStream" {}))))))
 
 (defn reader
-  ([o type] (reader o type true))
-  ([o type cache]
-     (if-let [t (#{:json :msgpack} type)]
-       (make-reader o t cache)
-       (throw (ex-info "Type must be :json or :msgpack" {:type type})))))
+  [o type]
+  (if-let [t (#{:json :msgpack} type)]
+    (make-reader o t)
+    (throw (ex-info "Type must be :json or :msgpack" {:type type}))))
 
 (defn read [^Reader reader]
   (locking reader
-    (unmarshal (.unmarshaler reader)
-               (if (.cache reader)
-                 (read-cache)
-                 (reify ReadCache
-                   (cache-read [_ str _] str))))))
+    (unmarshal (.unmarshaler reader) (read-cache))))
 
