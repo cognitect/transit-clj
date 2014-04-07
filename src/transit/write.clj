@@ -313,6 +313,14 @@
            false
            cache))
 
+(def ^:private thread-local-utc-date-format
+  ;; SimpleDateFormat is not thread-safe, so we use a ThreadLocal proxy for access.
+  ;; http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4228335
+  (proxy [ThreadLocal] []
+    (initialValue []
+      (doto (java.text.SimpleDateFormat. "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        (.setTimeZone (java.util.TimeZone/getTimeZone "GMT"))))))
+
 (defn stringable-keys?
   [m]
   (let [ks (keys m)]
@@ -431,7 +439,9 @@
   java.util.Date
   (tag [inst] "t")
   (rep [inst] (.getTime inst))
-  (str-rep [inst] (subs (pr-str inst) 7 36))
+  (str-rep [inst]
+    (let [format (.get thread-local-utc-date-format)]
+      (.format foramt inst)))
 
   java.util.UUID
   (tag [uuid] "u")
@@ -459,7 +469,7 @@
   (tag [s] "set")
   (rep [s] (as-tag "array" s nil))
   (str-rep [s] nil)
-)
+  )
 
 (deftype Writer [marshaler])
 
