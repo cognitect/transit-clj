@@ -41,18 +41,32 @@
                        "$" #(symbol %)
                        "set" #(reduce (fn [s v] (conj s v)) #{} %)
                        "list" #(reverse (into '() %))
-                       "cmap" #(reduce (fn [m me] (assoc m (first me) (second me)))
+                       "cmap" #(reduce (fn [m v] (assoc m (nth v 0) (nth v 1)))
                                        {} (partition 2 %))
                        "ratio" #(/ (first %) (second %))}))
+
+(defn default-decoder
+  [^String tag rep]
+  (if (and (= (.length tag) 1) (string? rep))
+    (str "`" tag rep)
+    (w/tagged-value tag rep)))
+
+(def default-decode-fn (atom default-decoder))
 
 (defn register-decode-fn
   [tag fn]
   (swap! decode-fns assoc tag fn))
 
-(defn decode-fn
-  [tag]
+(defn register-default-decode-fn
+  [fn]
+  (when fn (reset! default-decode-fn fn)))
+
+(defn decode
+  [tag rep]
   ;;(prn "decode" tag rep)
-  (@decode-fns tag))
+  (if-let [decoder (@decode-fns tag)]
+    (decoder rep)
+    (@default-decode-fn tag rep)))
 
 (defprotocol ReadCache
   (cache-read [cache str as-map-key]))
@@ -62,15 +76,13 @@
   ;;(prn "parse-str before" s)
   (let [res (if (and (string? s)
                      (> (.length ^String s) 1)
-                     (= "~" (subs ^String s 0 1)))
+                     (= "~" (subs ^String s 0 1))) ;; ESC
               (case (subs s 1 2)
                 "~" (subs s 1) ;; ESC
                 "^" (subs s 1) ;; SUB
                 "`" (subs s 1) ;; RESERVED
                 "#" s ;; TAG
-                (if-let [decode-fn (decode-fn (subs s 1 2))]
-                  (decode-fn (subs s 2))
-                  s))
+                (decode (subs s 1 2) (subs s 2)))
               s)]
     ;;(prn "parse-str after" res)
     res))
@@ -82,9 +94,7 @@
         entry (when (.hasNext iter) (.next iter))
         key (when entry (.getKey ^java.util.Map$Entry entry))]
     (if (and entry (string? key) (> (.length ^String key) 1) (= "#" (subs key 1 2)))
-      (if-let [decode-fn (decode-fn (subs key 2))]
-        (decode-fn (.getValue ^java.util.Map$Entry entry))
-        m)
+      (decode (subs key 2) (.getValue ^java.util.Map$Entry entry))
       m)))
 
 (defn cache-code?

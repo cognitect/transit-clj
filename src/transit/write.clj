@@ -68,9 +68,13 @@
     (let [c (subs s 0 1)]
       (if (or (= ESC c)
               (= SUB c)
-              (= RESERVED c))
+              (and (= RESERVED c)
+                   (> (.length s) 1)
+                   (not= ESC (subs s 1 2))))
         (str ESC s)
-        s))
+        (if (= RESERVED c)
+          (subs s 1)
+          s)))
     s))
 
 (defn nsed-name
@@ -252,6 +256,10 @@
 
 (defn quoted [o] (Quote. o))
 
+(deftype TaggedValue [tag rep])
+
+(defn tagged-value [tag rep] (TaggedValue. tag rep))
+
 (defn emit-tagged-map
   [em tag rep _ cache]
   (emit-map-start em 1)
@@ -391,8 +399,13 @@
 
   Quote
   (tag [q] "'")
-  (rep [q] (rep (.o q)))
-  (str-rep [q] (str-rep (.o q)))
+  (rep [q] (.o q))
+  (str-rep [q] nil)
+
+  TaggedValue
+  (tag [tv] (.tag tv))
+  (rep [tv] (.rep tv))
+  (str-rep [_] nil)
 
   java.lang.Object
   (tag [o] (when (.isArray ^Class (type o)) "array"))
