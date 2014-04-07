@@ -40,11 +40,11 @@
   (extend-protocol transit.write/Handler
     Point
     (tag [_] "point")
-    (rep [p] (transit.write/as-tag :array [(.x p) (.y p)] nil))
+    (rep [p] (transit.write/as-tag "array" [(.x p) (.y p)] nil))
     (str-rep [_] nil)
     Circle
     (tag [_] "circle")
-    (rep [c] (transit.write/as-tag :array [(.c c) (.r c)] nil))
+    (rep [c] (transit.write/as-tag "array" [(.c c) (.r c)] nil))
     (str-rep [_] nil))
 
   (r/register-decode-fn "point" (fn [[x y]] (prn "making a point") (Point. x y)))
