@@ -497,11 +497,10 @@
     (throw (ex-info "Type must be :json or :msgpack" {:type type}))))
 
 (defn write [^Writer writer o]
-  (locking writer 
-    (let [m (.marshaler writer)]
-      (marshal-top m o (write-cache))
-      ;; can we configure JsonGenerator to automatically flush writes?
-      (flush-writer m))))
+  (let [m (.marshaler writer)]
+    (marshal-top m o (write-cache))
+    ;; can we configure JsonGenerator to automatically flush writes?
+    (flush-writer m)))
 
 
 

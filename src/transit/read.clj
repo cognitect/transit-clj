@@ -258,6 +258,5 @@
     (throw (ex-info "Type must be :json or :msgpack" {:type type}))))
 
 (defn read [^Reader reader]
-  (locking reader
-    (unmarshal (.unmarshaler reader) (read-cache))))
+  (unmarshal (.unmarshaler reader) (read-cache)))
 
