@@ -441,7 +441,7 @@
   (rep [inst] (.getTime inst))
   (str-rep [inst]
     (let [format (.get thread-local-utc-date-format)]
-      (.format foramt inst)))
+      (.format format inst)))
 
   java.util.UUID
   (tag [uuid] "u")
