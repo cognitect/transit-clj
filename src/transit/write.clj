@@ -244,9 +244,11 @@
   (emit-map-end em))
 
 (defprotocol Handler
-  (tag [_])
-  (rep [_])
-  (str-rep [_]))
+  (tag [_ h])
+  (rep [h o])
+  (str-rep [h o]))
+
+(declare handler)
 
 (deftype AsTag [tag rep str])
 
@@ -268,26 +270,27 @@
   (emit-map-end em))
 
 (defn emit-encoded
-  [em tag o as-map-key cache]
+  [em h tag o as-map-key cache]
   (if (= (.length ^String tag) 1)
-    (let [rep (rep o)]
+    (let [rep (rep h o)]
       (if (string? rep)
         (emit-string em ESC tag rep as-map-key cache)
         (if (or as-map-key (prefers-strings em))
-          (let [rep (str-rep o)]
+          (let [rep (str-rep h o)]
             (if (string? rep)
               (emit-string em ESC tag rep as-map-key cache)
               (throw (ex-info "Cannot be encoded as string" {:tag tag :rep rep :o o}))))
           (emit-tagged-map em tag rep as-map-key cache))))
     (if as-map-key
       (throw (ex-info "Cannot be used as map key" {:tag tag :rep rep :o o}))
-      (emit-tagged-map em tag (rep o) as-map-key cache))))
+      (emit-tagged-map em tag (rep h o) as-map-key cache))))
 
 (defn marshal
   [em o as-map-key cache]
   ;;(prn "marshal" o (tag o) (rep o))
-  (if-let [tag (tag o)]
-    (let [rep (rep o)]
+  (if-let [h (handler o)]
+    (let [tag (tag h o)
+          rep (rep h o)]
       ;;(prn "marshal" tag rep)
       (case tag
         "_" (emit-nil em as-map-key cache)
@@ -299,17 +302,21 @@
         "'" (emit-quoted em rep cache)
         "array" (emit-array em rep as-map-key cache)
         "map" (emit-map em rep as-map-key cache)
-        (emit-encoded em tag o as-map-key cache)))
+        (emit-encoded em h tag o as-map-key cache)))
     (throw (ex-info "Not supported" {:o o :type (type o)}))))
+
+(defn maybe-quoted
+  [o]
+  (if-let [h (handler o)]
+    (if (= (.length ^String (tag h o)) 1)
+      (quoted o)
+      o)
+    (throw (ex-info "Not supported" {:o o :type (type o)})))  )
 
 (defn marshal-top
   [em o cache]
   (marshal em
-           (if-let [^String tag (tag o)]
-             (if (= (.length tag) 1)
-               (quoted o)
-               o)
-             (throw (ex-info "Not supported" {:o o :type (type o)})))
+           (maybe-quoted o)
            false
            cache))
 
@@ -324,181 +331,254 @@
 (defn stringable-keys?
   [m]
   (let [ks (keys m)]
-    (every? #(= (.length ^String (tag %)) 1) ks)))
+    (every? #(= (.length ^String (tag (handler %) %)) 1) ks)))
 
-(extend-protocol Handler
+(def default-handlers
+{
+ (type (byte-array 0))
+ (reify Handler
+   (tag [_ _] "b")
+   (rep [_ bs] bs)
+   (str-rep [_ _] nil))
 
-  (type (byte-array 0))
-  (tag [_] "b")
-  (rep [bs] bs)
-  (str-rep [_] nil)
+ nil
+ (reify Handler
+   (tag [_ _] "_")
+   (rep [_ _] nil)
+   (str-rep [_ _] nil))
 
-  nil
-  (tag [_] "_")
-  (rep [_] nil)
-  (str-rep [_] nil)
+ java.lang.String
+ (reify Handler
+   (tag [_ _] "s")
+   (rep [_ s] s)
+   (str-rep [_ s] s))
 
-  java.lang.String
-  (tag [_] "s")
-  (rep [s] s)
-  (str-rep [s] s)
-
-  java.lang.Boolean
-  (tag [_] "?")
-  (rep [b] b)
-  (str-rep [b] (str b))
+ java.lang.Boolean
+ (reify Handler
+   (tag [_ _] "?")
+   (rep [_ b] b)
+   (str-rep [_ b] (str b)))
   
-  java.lang.Byte
-  (tag [_] "i")
-  (rep [b] b)
-  (str-rep [b] (str b))
+ java.lang.Byte
+ (reify Handler
+   (tag [_ _] "i")
+   (rep [_ b] b)
+   (str-rep [_ b] (str b)))
 
-  java.lang.Short
-  (tag [_] "i")
-  (rep [s] s)
-  (str-rep [s] (str s))
+ java.lang.Short
+ (reify Handler
+   (tag [_ _] "i")
+   (rep [_ s] s)
+   (str-rep [_ s] (str s)))
 
-  java.lang.Integer
-  (tag [_] "i")
-  (rep [i] i)
-  (str-rep [i] (str i))
+ java.lang.Integer
+ (reify Handler
+   (tag [_ _] "i")
+   (rep [_ i] i)
+   (str-rep [_ i] (str i)))
 
-  java.lang.Long
-  (tag [_] "i")
-  (rep [l] l)
-  (str-rep [l] (str l))
+ java.lang.Long
+ (reify Handler
+   (tag [_ _] "i")
+   (rep [_ l] l)
+   (str-rep [_ l] (str l)))
 
-  java.math.BigInteger
-  (tag [_] "i")
-  (rep [bi] bi)
-  (str-rep [bi] (str bi))
+ java.math.BigInteger
+ (reify Handler
+   (tag [_ _] "i")
+   (rep [_ bi] bi)
+   (str-rep [_ bi] (str bi)))
 
-  clojure.lang.BigInt
-  (tag [_] "i")
-  (rep [bi] bi)
-  (str-rep [bi] (str bi))
+ clojure.lang.BigInt
+ (reify Handler
+   (tag [_ _] "i")
+   (rep [_ bi] bi)
+   (str-rep [_ bi] (str bi)))
 
-  java.lang.Float
-  (tag [_] "d")
-  (rep [f] f)
-  (str-rep [f] (str f))
+ java.lang.Float
+ (reify Handler
+   (tag [_ _] "d")
+   (rep [_ f] f)
+   (str-rep [_ f] (str f)))
 
-  java.lang.Double
-  (tag [_] "d")
-  (rep [d] d)
-  (str-rep [d] (str d))
+ java.lang.Double
+ (reify Handler
+   (tag [_ _] "d")
+   (rep [_ d] d)
+   (str-rep [_ d] (str d)))
 
-  java.util.Map
-  (tag [m] (if (stringable-keys? m) "map" "cmap"))
-  (rep [m] (if (stringable-keys? m)
-             (.entrySet m)
-             (as-tag "array" (mapcat identity (.entrySet m)) nil)))
-  (str-rep [_] nil)
+ java.util.Map
+ (reify Handler
+   (tag [_ m] (if (stringable-keys? m) "map" "cmap"))
+   (rep [_ m] (if (stringable-keys? m)
+              (.entrySet ^java.util.Map m)
+              (as-tag "array" (mapcat identity (.entrySet ^java.util.Map m)) nil)))
+   (str-rep [_ _] nil))
 
-  java.util.List
-  (tag [l] (if (seq? l) "list" "array"))
-  (rep [l] (if (seq? l) (as-tag "array" l nil) l))
-  (str-rep [_] nil)
+ java.util.List
+ (reify Handler
+   (tag [_ l] (if (seq? l) "list" "array"))
+   (rep [_ l] (if (seq? l) (as-tag "array" l nil) l))
+   (str-rep [_ _] nil))
 
-  AsTag
-  (tag [e] (.tag e))
-  (rep [e] (.rep e))
-  (str-rep [e] (.str e))
+ AsTag
+ (reify Handler
+   (tag [_ e] (.tag ^AsTag e))
+   (rep [_ e] (.rep ^AsTag e))
+   (str-rep [_ e] (.str ^AsTag e)))
 
-  Quote
-  (tag [q] "'")
-  (rep [q] (.o q))
-  (str-rep [q] nil)
+ Quote
+ (reify Handler
+   (tag [_ q] "'")
+   (rep [_ q] (.o ^Quote q))
+   (str-rep [_ q] nil))
 
-  TaggedValue
-  (tag [tv] (.tag tv))
-  (rep [tv] (.rep tv))
-  (str-rep [_] nil)
+ TaggedValue
+ (reify Handler
+   (tag [_ tv] (.tag ^TaggedValue tv))
+   (rep [_ tv] (.rep ^TaggedValue tv))
+   (str-rep [_ _] nil))
 
-  java.lang.Object
-  (tag [o] (when (.isArray ^Class (type o)) "array"))
-  (rep [o] (when (.isArray ^Class (type o)) o))
+ java.lang.Object
+ (reify Handler
+   (tag [_ o] (when (.isArray ^Class (type o)) "array"))
+   (rep [_ o] (when (.isArray ^Class (type o)) o)))
 
-  ;; extensions
+ ;; extensions
 
-  clojure.lang.Keyword
-  (tag [kw] ":")
-  (rep [kw] (nsed-name kw))
-  (str-rep [kw] (rep kw))
+ clojure.lang.Keyword
+ (reify Handler
+   (tag [_ _] ":")
+   (rep [_ kw] (nsed-name kw))
+   (str-rep [_ kw] (rep _ kw)))
 
-  clojure.lang.Ratio
-  (tag [r] "ratio")
-  (rep [r] (as-tag "array" [(numerator r) (denominator r)] nil))
-  (str-rep [_] nil)
+ clojure.lang.Ratio
+ (reify Handler
+   (tag [_ _] "ratio")
+   (rep [_ r] (as-tag "array" [(numerator r) (denominator r)] nil))
+   (str-rep [_ _] nil))
 
-  java.math.BigDecimal
-  (tag [bigdec] "f")
-  (rep [bigdec] (str bigdec))
-  (str-rep [bigdec] (rep bigdec))
+ java.math.BigDecimal
+ (reify Handler
+   (tag [_ _] "f")
+   (rep [_ bigdec] (str bigdec))
+   (str-rep [_ bigdec] (rep _ bigdec)))
 
-  java.util.Date
-  (tag [inst] "t")
-  (rep [inst] (.getTime inst))
-  (str-rep [inst]
-    (let [format (.get thread-local-utc-date-format)]
-      (.format foramt inst)))
+ java.util.Date
+ (reify Handler
+   (tag [_ _] "t")
+   (rep [_ inst] (.getTime ^java.util.Date inst))
+   (str-rep [_ inst]
+     (let [format (.get ^ThreadLocal thread-local-utc-date-format)]
+       (.format ^java.text.SimpleDateFormat format inst))))
 
-  java.util.UUID
-  (tag [uuid] "u")
-  (rep [uuid]
-    [(.getMostSignificantBits uuid)
-     (.getLeastSignificantBits uuid)])
-  (str-rep [uuid] (str uuid))
+ java.util.UUID
+ (reify Handler
+   (tag [_ _] "u")
+   (rep [_ uuid]
+     [(.getMostSignificantBits ^java.util.UUID uuid)
+      (.getLeastSignificantBits ^java.util.UUID uuid)])
+   (str-rep [_ uuid] (str uuid)))
 
-  java.net.URI
-  (tag [uri] "r")
-  (rep [uri] (str uri))
-  (str-rep [uri] (rep uri))
+ java.net.URI
+ (reify Handler
+   (tag [_ _] "r")
+   (rep [_ uri] (str uri))
+   (str-rep [_ uri] (rep _ uri)))
 
-  clojure.lang.Symbol
-  (tag [sym] "$")
-  (rep [sym] (nsed-name sym))
-  (str-rep [sym] (rep sym))
+ clojure.lang.Symbol
+ (reify Handler
+   (tag [_ _] "$")
+   (rep [_ sym] (nsed-name sym))
+   (str-rep [_ sym] (rep _ sym)))
 
-  java.lang.Character
-  (tag [c] "c")
-  (rep [c] (str c))
-  (str-rep [c] (rep c))
+ java.lang.Character
+ (reify Handler
+   (tag [_ _] "c")
+   (rep [_ c] (str c))
+   (str-rep [_ c] (rep _ c)))
 
-  java.util.Set
-  (tag [s] "set")
-  (rep [s] (as-tag "array" s nil))
-  (str-rep [s] nil)
-  )
+ java.util.Set
+ (reify Handler
+   (tag [_ _] "set")
+   (rep [_ s] (as-tag "array" s nil))
+   (str-rep [_ s] nil))
+ })
 
-(deftype Writer [marshaler])
+(def ^:private ^:dynamic *handlers* default-handlers)
+
+(defn get-itf-handler [^Class t]
+  (let [possible (loop [t t possible {}]
+                   (if (not= t Object)
+                     (recur (.getSuperclass t)
+                            (merge possible
+                                   (reduce (fn [m itf]
+                                             (if-let [h (get *handlers* itf)]
+                                               (assoc m itf h)
+                                               m))
+                                           {}
+                                           (.getInterfaces t))))
+                     possible))]
+    (condp = (.size ^java.util.Map possible)
+      0 nil
+      1 (let [entries (.entrySet ^java.util.Map possible)
+              entry (-> entries .iterator .next)]
+          (.getValue ^java.util.Map$Entry entry))
+      (throw (ex-info (str "More than one match for type " t)
+                      {:type t})))))
+
+
+(defn get-base-handler [^Class t]
+  (loop [t (.getSuperclass t)]
+    (when (not= t Object)
+      (if-let [h (get *handlers* t)]
+        h
+        (recur (.getSuperclass t))))))
+
+(defn handler [o]
+  ;; look for handler in handlers
+  (let [t (type o)]
+    (if-let [h (get *handlers* t)]
+      h
+      (when-let [h (or (get-base-handler t)
+                       (get-itf-handler t)
+                       (get *handlers* Object))]
+        (set! *handlers* (assoc *handlers* t h))
+        h))))
+
+(deftype Writer [marshaler opts])
 
 (defprotocol Writerable
-  (make-writer [_ type]))
+  (make-writer [_ type opts]))
 
 (extend-protocol Writerable
   OutputStream
-  (make-writer [^OutputStream stm type]
+  (make-writer [^OutputStream stm type opts]
     (Writer. 
      (case type
        :json (.createGenerator (JsonFactory.) stm)
-       :msgpack (.createPacker (MessagePack.) stm))))
+       :msgpack (.createPacker (MessagePack.) stm))
+     opts))
   java.io.Writer
-  (make-writer [^java.io.Writer w type]
+  (make-writer [^java.io.Writer w type opts]
     (Writer.
      (case type
        :json (.createGenerator (JsonFactory.) w)
-       :msgpack (throw (ex-info "Cannot create :msgpack writer on top of java.io.Writer, must use java.io.OutputStream" {}))))))
+       :msgpack (throw (ex-info "Cannot create :msgpack writer on top of java.io.Writer, must use java.io.OutputStream" {})))
+     opts)))
 
 (defn writer
-  [o type]
-  (if-let [t (#{:json :msgpack} type)]
-    (make-writer o t)
-    (throw (ex-info "Type must be :json or :msgpack" {:type type}))))
+  ([o type] (writer o type {}))
+  ([o type {:keys [handlers] :as opts}]
+     (if (#{:json :msgpack} type)
+       (make-writer o type opts)
+       (throw (ex-info "Type must be :json or :msgpack" {:type type})))))
 
 (defn write [^Writer writer o]
-  (let [m (.marshaler writer)]
-    (marshal-top m o (write-cache))
+  (let [m (.marshaler writer)
+        {:keys [handlers]} (.opts writer)]
+    (binding [*handlers* (merge default-handlers handlers)]
+      (marshal-top m o (write-cache)))
     ;; can we configure JsonGenerator to automatically flush writes?
     (flush-writer m)))
 

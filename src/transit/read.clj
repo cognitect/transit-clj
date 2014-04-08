@@ -20,7 +20,7 @@
   (let [o (edn/read-string s)]
     (when (number? o) o)))
 
-(def decode-fns (atom {"'" identity
+(def default-decoders {"'" identity
                        ":" #(keyword %)
                        "?" #(Boolean. ^String %)
                        "b" #(Base64/decodeBase64 ^bytes %)
@@ -43,30 +43,24 @@
                        "list" #(reverse (into '() %))
                        "cmap" #(reduce (fn [m v] (assoc m (nth v 0) (nth v 1)))
                                        {} (partition 2 %))
-                       "ratio" #(/ (first %) (second %))}))
+                       "ratio" #(/ (first %) (second %))})
 
-(defn default-decoder
+(def ^:private ^:dynamic *decoders* default-decoders)
+
+(defn default-default-decoder
   [^String tag rep]
   (if (and (= (.length tag) 1) (string? rep))
     (str "`" tag rep)
     (w/tagged-value tag rep)))
 
-(def default-decode-fn (atom default-decoder))
-
-(defn register-decode-fn
-  [tag fn]
-  (swap! decode-fns assoc tag fn))
-
-(defn register-default-decode-fn
-  [fn]
-  (when fn (reset! default-decode-fn fn)))
+(def ^:private ^:dynamic *default* default-default-decoder)
 
 (defn decode
   [tag rep]
   ;;(prn "decode" tag rep)
-  (if-let [decoder (@decode-fns tag)]
+  (if-let [decoder (*decoders* tag)]
     (decoder rep)
-    (@default-decode-fn tag rep)))
+    (*default* tag rep)))
 
 (defprotocol ReadCache
   (cache-read [cache str as-map-key]))
@@ -232,31 +226,37 @@
            (.readArrayEnd mup true)
            res))))))
 
-(deftype Reader [unmarshaler])
+(deftype Reader [unmarshaler opts])
 
 (defprotocol Readerable
-  (make-reader [_ type]))
+  (make-reader [_ type opts]))
 
 (extend-protocol Readerable
   InputStream
-  (make-reader [^InputStream stm type]
+  (make-reader [^InputStream stm type opts]
     (Reader. 
      (case type
        :json (.createParser (JsonFactory.) stm)
-       :msgpack (.createUnpacker (MessagePack.) stm))))
+       :msgpack (.createUnpacker (MessagePack.) stm))
+     opts))
   java.io.Reader
-  (make-reader [^java.io.Reader r type]
+  (make-reader [^java.io.Reader r type opts]
     (Reader.
      (case type
        :json (.createParser (JsonFactory.) r)
-       :msgpack (throw (ex-info "Cannot create :msgpack reader on top of java.io.Reader, must use java.io.InputStream" {}))))))
+       :msgpack (throw (ex-info "Cannot create :msgpack reader on top of java.io.Reader, must use java.io.InputStream" {})))
+     opts)))
 
 (defn reader
-  [o type]
-  (if-let [t (#{:json :msgpack} type)]
-    (make-reader o t)
-    (throw (ex-info "Type must be :json or :msgpack" {:type type}))))
+  ([o type] (reader o type {}))
+  ([o type opts]
+     (if (#{:json :msgpack} type)
+       (make-reader o type opts)
+       (throw (ex-info "Type must be :json or :msgpack" {:type type})))))
 
 (defn read [^Reader reader]
-  (unmarshal (.unmarshaler reader) (read-cache)))
+  (let [{:keys [decoders default]} (.opts reader)]
+    (binding [*decoders* (merge default-decoders decoders)
+              *default* (or default default-default-decoder)]
+      (unmarshal (.unmarshaler reader) (read-cache)))))
 
