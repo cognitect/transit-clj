@@ -423,12 +423,6 @@
    (rep [_ l] (if (seq? l) (as-tag "array" l nil) l))
    (str-rep [_ _] nil))
 
- java.lang.Iterable
- (reify Handler
-   (tag [_ _] "array")
-   (rep [_ i] i)
-   (str-rep [_ _] nil))
-
  AsTag
  (reify Handler
    (tag [_ e] (.tag ^AsTag e))
