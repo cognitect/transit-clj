@@ -125,6 +125,18 @@
     "A vector of interesting doubles"
     [-3.14159 3.14159 4E11 2.998E8 6.626E-34])
   
+  (def uuids [#uuid "5a2cbea3-e8c6-428b-b525-21239370dd55"
+              #uuid "d1dc64fa-da79-444b-9fa4-d4412f427289"
+              #uuid "501a978e-3a3e-4060-b3be-1cf2bd4b1a38"
+              #uuid "b3ba141a-a776-48e4-9fae-a28ea8571f58"])
+
+  (write-exemplar "one_uuid" "A single UUID" (first uuids))
+
+  (write-exemplar
+    "uuids"
+    "A vector of uuids"
+    uuids)
+  
 
   (def dates (vmap #(java.util.Date. %) [-6106017600000 0 946728000000 1396909037000]))
 
