@@ -271,7 +271,7 @@
 
 (defn emit-encoded
   [em h tag o as-map-key cache]
-  (prn "EMIT ENCODED" em h tag o as-map-key cache)
+  ;;(prn "EMIT ENCODED" em h tag o as-map-key cache)
   (if (= (.length ^String tag) 1)
     (let [rep (rep h o)]
       (if (string? rep)
