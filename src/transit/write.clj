@@ -271,6 +271,7 @@
 
 (defn emit-encoded
   [em h tag o as-map-key cache]
+  ;;(prn "EMIT ENCODED" em h tag o as-map-key cache)
   (if (= (.length ^String tag) 1)
     (let [rep (rep h o)]
       (if (string? rep)
@@ -288,9 +289,10 @@
 (defn marshal
   [em o as-map-key cache]
   ;;(prn "marshal" o (tag o) (rep o))
-  (if-let [h (handler o)]
-    (let [tag (tag h o)
-          rep (rep h o)]
+  (let [h (handler o)
+        tag (when h (tag h o))
+        rep (when h (rep h o))]
+    (if (and h tag)
       ;;(prn "marshal" tag rep)
       (case tag
         "_" (emit-nil em as-map-key cache)
@@ -302,8 +304,8 @@
         "'" (emit-quoted em rep cache)
         "array" (emit-array em rep as-map-key cache)
         "map" (emit-map em rep as-map-key cache)
-        (emit-encoded em h tag o as-map-key cache)))
-    (throw (ex-info "Not supported" {:o o :type (type o)}))))
+        (emit-encoded em h tag o as-map-key cache))
+      (throw (ex-info "Not supported" {:o o :type (type o)})))))
 
 (defn maybe-quoted
   [o]
