@@ -8,8 +8,9 @@
 
 (import [java.io File FileOutputStream ByteArrayInputStream ByteArrayOutputStream OutputStreamWriter])
 
-(defn range-centered-on [n]
-  (vec (range (- n 5) (+ n 6))))
+(defn range-centered-on 
+  ([n] (range-centered-on n 5))
+  ([n m] (vec (range (- n m) (+ n m 1)))))
   
 (defn vmap [f s]
   (vec (map f s)))
@@ -27,21 +28,30 @@
   
 (defn write-description [file-name description vals]
   (println "##" description)
-  (println "* Files:" (str file-name ".json") (str file-name ".mp"))
+  (println "* Files:" (str file-name ".edn") (str file-name ".json") (str file-name ".mp"))
   (println "* Value (EDN)")
   (println)
   (doseq [item vals] (println "    " (pr-str item)))
   (println))
 
-(defn write-exemplar [file-name description & vals]
-  (write-description file-name description vals)
+(defn write-transit [file-name & vals]
   (doseq [format [{:type :json, :suffix ".json"} {:type :msgpack :suffix ".mp"}]]
     (with-open [os (io/output-stream (str file-name (:suffix format)))]
       (let [jsw (w/writer os (:type format))]
         (doseq [item vals] (w/write jsw item))))))
 
+(defn write-exemplar [file-name description & vals]
+  (write-description file-name description vals)
+  (with-open [w (io/writer (str file-name ".edn"))]
+    (binding [*out* w] (apply pr vals)))
+  (apply write-transit file-name vals))
+
 (binding [*out* (io/writer "README.md")]
   (println "# Example transit files.\n\n")
+  (println "There are three files for each value: An EDN file and two transit files,")
+  (println "one encoded in JSON and one in MessagePack\n\n")
+  (println "Note: The example transit files in this directory are *generated*.")
+  (println "See https://github.com/cognitect/transit-clj/blob/master/test/exemplar.clj\n\n")
 
   (write-exemplar "nil" "The nil/null/ain't there value" nil)
   (write-exemplar "true" "True" true)
@@ -51,6 +61,7 @@
   (write-exemplar "one_string" "A single string" "hello")
   (write-exemplar "one_keyword" "A single keyword" :hello)
   (write-exemplar "one_symbol" "A single symbol" 'hello)
+  (write-exemplar "one_date" "A single date" (java.util.Date. 946728000000))
   
   (def vector-simple  [1 2 3])
   (def vector-mixed  [0 1 2.0 true false "five" :six 'seven "~eight" nil])
@@ -73,18 +84,27 @@
   
   (write-exemplar "small_ints" "A vector of eleven small integers" (range-centered-on 0))
 
-  (write-exemplar "ints", "vector of ints" (range 128))
+  (write-exemplar "ints", "vector of ints" (vec (range 128)))
   
+  (def powers-two
+       [1 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384
+        32768 65536 131072 262144 524288 1048576 2097152 4194304
+        8388608 16777216 33554432 67108864 134217728 268435456
+        536870912 1073741824 2147483648 4294967296 8589934592
+        17179869184 34359738368 68719476736 137438953472
+        274877906944 549755813888 1099511627776 2199023255552
+        4398046511104 8796093022208 17592186044416 35184372088832
+        70368744177664 140737488355328 281474976710656
+        562949953421312 1125899906842624 2251799813685248
+        4503599627370496 9007199254740992 18014398509481984
+        36028797018963968 72057594037927936 144115188075855872
+        288230376151711744 576460752303423488 1152921504606846976
+        2305843009213693952 4611686018427387904 9223372036854775808
+        18446744073709551616 36893488147419103232])
+
   (def interesting-ints 
-    (vec
-      (concat 
-       (range-centered-on 32768)
-       (range-centered-on 65536)
-       (range-centered-on 2147483648)
-       (range-centered-on 4294967296)
-       (range-centered-on 2305843009213693952)
-       (range-centered-on 4611686018427387904))))
-  
+    (vec (apply concat (map #(range-centered-on % 2) powers-two))))
+    
   (write-exemplar 
     "ints_interesting"
     "A vector of possibly interesting positive integers"
@@ -105,7 +125,26 @@
     "A vector of interesting doubles"
     [-3.14159 3.14159 4E11 2.998E8 6.626E-34])
   
+  (def uuids [#uuid "5a2cbea3-e8c6-428b-b525-21239370dd55"
+              #uuid "d1dc64fa-da79-444b-9fa4-d4412f427289"
+              #uuid "501a978e-3a3e-4060-b3be-1cf2bd4b1a38"
+              #uuid "b3ba141a-a776-48e4-9fae-a28ea8571f58"])
+
+  (write-exemplar "one_uuid" "A single UUID" (first uuids))
+
+  (write-exemplar
+    "uuids"
+    "A vector of uuids"
+    uuids)
   
+
+  (def dates (vmap #(java.util.Date. %) [-6106017600000 0 946728000000 1396909037000]))
+
+  (write-exemplar
+    "dates_interesting"
+    "A vector of interesting dates: 1776-07-04, 1970-01-01, 2000-01-01, 2014-04-07"
+    dates)
+
   (def symbols ['a 'ab 'abc 'abcd 'abcde 'a1 'b2 'c3 'a_b])
   
   (write-exemplar "symbols" "A vector of symbols" symbols)
@@ -184,5 +223,9 @@
   (write-exemplar
     "vector_94_keywords_repeated_twice"
     "Vector of 94 keywords, repeated twice"
-    (vector-of-keywords 94 188)))
+    (vector-of-keywords 94 188))
 
+  (write-exemplar
+    "vector_95_keywords_repeated_twice"
+    "Vector of 95 keywords, repeated twice"
+    (vector-of-keywords 95 190)))
