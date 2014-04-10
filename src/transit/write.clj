@@ -584,7 +584,12 @@
     ;; can we configure JsonGenerator to automatically flush writes?
     (flush-writer m)))
 
-
+(defn make-handler
+  [tag-fn rep-fn str-rep-fn]
+  (reify Handler
+    (tag [_ o] (tag-fn o))
+    (rep [_ o] (rep-fn o))
+    (str-rep [_ o] (str-rep-fn o))))
 
 
 
