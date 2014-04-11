@@ -24,7 +24,7 @@ The script must take one argument which can be either `json` or
 To run a test, execute the following command in the transit-clj
 directory.
 
-```clj
+```
 lein run -m transit.verify
 ```
 
