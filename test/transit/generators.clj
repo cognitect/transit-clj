@@ -1,3 +1,6 @@
+;; Copyright (c) Cognitect, Inc.
+;; All rights reserved.
+
 (ns transit.generators
   (:require [clojure.data.generators :as gen])
   (:refer-clojure :exclude [namespace]))
@@ -118,6 +121,10 @@
 (defn ednable
   []
   (gen/one-of ednable-scalar ednable-collection))
+
+(defn ednable-colls
+  []
+  (gen/one-of ednable-collection))
 
 (defn non-ednable
   "Generate something that can be printed with *print-dup*, but

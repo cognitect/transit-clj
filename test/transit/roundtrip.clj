@@ -1,3 +1,6 @@
+;; Copyright (c) Cognitect, Inc.
+;; All rights reserved.
+
 (ns transit.roundtrip
   (:require [transit.read :as r]
             [transit.write :as w]
@@ -15,7 +18,7 @@
 (defn msecs [start end] (/ (double (- end start)) 1000000.0))
 
 (defn rt
-  [write-fn read-fn]
+  [write-fn read-fn sz-fn]
   (fn [form]
     (let [start (now)
           tmp (write-fn form)
@@ -23,17 +26,18 @@
           form2 (read-fn tmp)
           end (now)]
       {:form form2
+       ;;:size (sz-fn tmp)
        :same (= form form2)
        :write (msecs start mid)
        :read (msecs mid end)})))
 
 (defn edn-rt
   [form]
-  ((rt pr-str edn/read-string) form))
+  ((rt pr-str edn/read-string #(.length %)) form))
 
 (defn fressian-rt
   [form]
-  ((rt f/write f/read) form))
+  ((rt f/write f/read #(.limit %)) form))
 
 (defn transit-writer
   [type]
@@ -43,19 +47,25 @@
       (w/write w form)
       (.toByteArray out))))
 
+(def transit-js-writer (transit-writer :json))
+(def transit-mp-writer (transit-writer :msgpack))
+
 (defn transit-reader
   [type]
   (fn [bytes]
     (let [r (r/reader (ByteArrayInputStream. bytes) type)]
       (r/read r))))
 
+(def transit-js-reader (transit-reader :json))
+(def transit-mp-reader (transit-reader :msgpack))
+
 (defn transit-js-rt
   [form]
-  ((rt (transit-writer :json) (transit-reader :json)) form))
+  ((rt transit-js-writer transit-js-reader alength) form))
 
 (defn transit-mp-rt
   [form]
-  ((rt (transit-writer :msgpack) (transit-reader :msgpack)) form))
+  ((rt transit-mp-writer transit-mp-reader alength) form))
 
 (defn fake-js-reader
   [bytes]
@@ -104,6 +114,24 @@
     (prn i)
     (rt-summary form))
   (rt-summary form))
+
+(defn avg
+  [s]
+  (/ (apply + s) (float (count s))))
+
+(defn size-test
+  [m n]
+  (let [forms (take m (repeatedly #(take n (repeatedly transit.generators/ednable))))
+        edn (avg (map :size (map edn-rt forms)))
+        fressian (avg (map :size (map fressian-rt forms)))
+        transit-js (avg (map :size (map transit-js-rt forms)))
+        transit-mp (avg (map :size (map transit-mp-rt forms)))]
+    {:edn edn
+     :fressian fressian
+     :transit-js transit-js
+     :transit-mp transit-mp}
+    ))
+
 
 (comment
 

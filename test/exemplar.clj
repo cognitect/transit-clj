@@ -1,3 +1,6 @@
+;; Copyright (c) Cognitect, Inc.
+;; All rights reserved.
+
 (ns exemplar
   (:require [transit.read :as r]
             [transit.write :as w]
