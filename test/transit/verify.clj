@@ -164,7 +164,7 @@
     (try
       (let [results (-> results
                         (assoc-in [:tests :sample-file] (test-sample-files proc encoding ))
-                        (assoc-in [:tests :generated] (test-edn proc encoding)))]
+                        (assoc-in [:tests :sample-edn] (test-edn proc encoding)))]
         (stop-process proc)
         results)
       (catch Throwable e
