@@ -36,11 +36,13 @@ bin/verify
 Tests are currently limited to json and a few EDN examples.
 
 
-### What you need to run the test
+### Test requirements
 
-To run the java tests you will need to have maven installed.
+Testing `transit-clj` requires Leiningen.
 
-To run the Ruby tests you will need Ruby 1.9.
+Testing `transit-java` requires Maven.
+
+Testing `transit-ruby` requires Ruby 1.9.
 
 
 ### Supporting testing
