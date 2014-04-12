@@ -28,16 +28,10 @@ directory.
 lein run -m transit.verify
 ```
 
-This can currently be used to test both the Clojure and Java
-implementations of transit.
-
-transit-clj just works.
-
-To test transit-java, clone the repository and then build the project by
-running
+To test all implementations, run
 
 ```
-mvn package
+bin/verify
 ```
 
 Tests are currently limited to json and a few EDN examples.
