@@ -18,10 +18,10 @@ directory.
 bin/verify -impls clj -enc json
 ```
 
-This will test the json version of the `transit-clj` implementation.
+This will test the `json` version of the `transit-clj` implementation.
 
-The `-enc` option value can be either json or msgpack. If it is omitted
-then both with be tested.
+The `-enc` option value can be either `json` or `msgpack`. If it is
+omitted then both with be tested.
 
 The `-impls` can be any languange implementation. `clj` will test
 `transit-clj` and `ruby` will test `transit-ruby`. If this option is
@@ -34,6 +34,13 @@ bin/verify
 ```
 
 Tests are currently limited to json and a few EDN examples.
+
+
+### What you need to run the test
+
+To run the java tests you will need to have maven installed.
+
+To run the Ruby tests you will need Ruby 1.9.
 
 
 ### Supporting testing
