@@ -4,6 +4,8 @@ cd `dirname $0`/..
 
 IMPLS="$@"
 
+bin/get-transit
+
 if [ -z "$IMPLS" ] || [[ $IMPLS == *java* ]]; then
   bin/get-transit-java
 fi
