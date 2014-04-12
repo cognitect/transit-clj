@@ -1,0 +1,6 @@
+#!/bin/sh
+
+cd `dirname $0`/..
+
+bin/get-transit-java
+lein run -m transit.verify
