@@ -20,12 +20,17 @@ bin/verify -impls clj -enc json
 
 This will test the `json` version of the `transit-clj` implementation.
 
-The `-enc` option value can be either `json` or `msgpack`. If it is
-omitted then both with be tested.
+The `-enc` option can be either `json` or `msgpack`. If it is omitted
+then both with be tested.
 
-The `-impls` can be any languange implementation. `clj` will test
-`transit-clj` and `ruby` will test `transit-ruby`. If this option is
-omitted then it will attempt to test all implementations.
+The `-impls` option can be any languange implementation. `clj` will
+test `transit-clj` and `ruby` will test `transit-ruby`. If this option
+is omitted then it will attempt to test all implementations. Multiple
+languages can be specified
+
+```
+bin/verify -impls clj ruby
+```
 
 To test everything run:
 
