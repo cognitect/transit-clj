@@ -1,8 +1,6 @@
 #!/bin/sh
 
-cd `dirname $0`/..
-
-cd ..
+cd `dirname $0`/../..
 
 if [ ! -d "transit-java" ]; then
   git clone git@github.com:cognitect/transit-java.git

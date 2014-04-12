@@ -218,28 +218,38 @@
                         (println "Expected:" (pr-str (:transit-expected error)))
                         (println "Actual:  " (pr-str (:transit-actual error))))))))))
 
-(defn verify-impl [project]
+(defn- run-test [project encoding opts]
   (let [command (str "../" project "/bin/roundtrip")]
-    (report (-> (verify-impl-encoding command :json)
-                (assoc :project project)))
-    ;; TODO: :msgpack does not work against transit-clj which is the
-    ;; only impl.
-    #_(report (-> (verify-impl-encoding command :msgpack)
-                (assoc :project project)))))
+    (if (= encoding :msgpack)
+      (println "msgpack tests are disabled until we have a working implementation.")
+      (report (-> (verify-impl-encoding command encoding)
+                  (assoc :project project))))))
 
-(defn verify-all []
+(defn verify-impl [project {:keys [enc] :as opts}]
+  (doseq [e (if enc [enc] [:json :msgpack])]
+    (run-test project e opts)))
+
+(defn verify-all [{:keys [impls] :as opts}]
   (let [root (io/file "../")
         testable-impls (keep #(let [script (io/file root (str % "/bin/roundtrip"))]
                                 (when (.exists script) %))
                              (.list root))]
     (doseq [impl testable-impls]
-      (verify-impl impl))))
+      (when (or (not impls)
+                (contains? impls impl))
+        (verify-impl impl opts)))))
+
+(defn read-options [args]
+  (reduce (fn [a [[k] v]]
+            (case k
+              "-impls" (assoc a :impls (set (mapv #(str "transit-" %) v)))
+              "-check-transit" (assoc a :check-transit (= "true" (first v)))
+              "-enc" (assoc a :enc (keyword (first v)))
+              a))
+          {}
+          (partition 2 (partition-by #(.startsWith % "-") args))))
 
 (defn -main [& args]
   (binding [*color* true]
-    ;; TODO: what arguments should be passed to verify-all?
-    ;; -check-transit true (default is false)
-    ;; -encoding json|msgpack (default is both)
-    ;; -impl transit-java|transit-clj|etc (default to all)
-    (verify-all)
+    (verify-all (read-options args))
     (shutdown-agents)))

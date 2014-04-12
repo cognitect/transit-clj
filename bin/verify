@@ -2,5 +2,14 @@
 
 cd `dirname $0`/..
 
-bin/get-transit-java
-lein run -m transit.verify
+IMPLS="$@"
+
+if [ -z "$IMPLS" ] || [[ $IMPLS == *java* ]]; then
+  bin/get-transit-java
+fi
+
+if [ -z "$IMPLS" ] || [[ $IMPLS == *ruby* ]]; then
+  bin/get-transit-ruby
+fi
+
+exec lein run -m transit.verify "$@"
