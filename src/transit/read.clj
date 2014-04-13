@@ -22,7 +22,7 @@
 
 (def default-decoders {"'" identity
                        ":" #(keyword %)
-                       "?" #(Boolean. ^String %)
+                       "?" #(Boolean/valueOf ^boolean (= "t" %))
                        "b" #(Base64/decodeBase64 ^bytes %)
                        "_" (fn [_] nil)
                        "c" #(.charAt ^String % 0)

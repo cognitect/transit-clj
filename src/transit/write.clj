@@ -120,7 +120,7 @@
 
   (emit-boolean [^JsonGenerator jg b as-map-key cache]
     (if as-map-key
-      (emit-string jg ESC "?" b as-map-key cache)
+      (emit-string jg ESC "?" (.substring (str b) 0 1) as-map-key cache)
       (.writeBoolean jg b)))
 
   (emit-integer [^JsonGenerator jg i as-map-key cache]
