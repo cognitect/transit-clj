@@ -66,16 +66,13 @@
   [^String s]
   (if (> (.length s) 0)
     (let [c (subs s 0 1)]
-      (if (or (= ESC c)
-              (= SUB c)
-              (and (= RESERVED c)
-                   (> (.length s) 1)
-                   (not= ESC (subs s 1 2))))
-        (str ESC s)
-        (if (= RESERVED c)
-          (subs s 1)
-          s)))
-    s))
+      (cond (= RESERVED c)
+            (str ESC (subs s 1))
+
+            (or (= ESC c) (= SUB c))
+            (str ESC s)
+
+            :else s))))
 
 (defn nsed-name
   [^clojure.lang.Named kw-or-sym]
