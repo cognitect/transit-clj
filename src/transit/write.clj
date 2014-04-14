@@ -255,7 +255,12 @@
 
 (defn quoted [o] (Quote. o))
 
-(deftype TaggedValue [tag rep])
+(deftype TaggedValue [tag rep]
+  java.lang.Object
+  (equals [t o]
+    (and (= (type o) (type t))
+         (= (.tag ^TaggedValue t) (.tag ^TaggedValue o))
+         (= (.rep ^TaggedValue t) (.rep ^TaggedValue o)))))
 
 (defn tagged-value [tag rep] (TaggedValue. tag rep))
 
