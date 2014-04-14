@@ -187,9 +187,11 @@
                         (assoc-in [:tests :exemplar-file] (test-exemplar-files proc encoding))
                         (assoc-in [:tests :corner-case-edn] (test-corners-of-edn proc encoding))
                         (assoc-in [:tests :corner-case-transit-json]
-                                  (test-corners-of-transit-json proc encoding))
-                        (assoc-in [:tests :generated-edn]
-                                  (test-generated-edn (:generated-forms opts) proc encoding)))]
+                                  (test-corners-of-transit-json proc encoding)))
+            results (if (:gen opts)
+                      (assoc-in results [:tests :generated-edn]
+                                (test-generated-edn (:generated-forms opts) proc encoding))
+                      results)]
         (stop-process proc)
         results)
       (catch Throwable e
@@ -267,7 +269,8 @@
         testable-impls (keep #(let [script (io/file root (str % "/bin/roundtrip"))]
                                 (when (.exists script) %))
                              (.list root))
-        forms (take 100 (repeatedly gen/ednable))]
+        forms (when-let [n (:gen opts)]
+                (take n (repeatedly gen/ednable)))]
     (doseq [impl testable-impls]
       (when (or (not impls)
                 (contains? impls impl))
@@ -278,6 +281,7 @@
             (case k
               "-impls" (assoc a :impls (set (mapv #(str "transit-" %) v)))
               "-enc" (assoc a :enc (keyword (first v)))
+              "-gen" (assoc a :gen (Integer/valueOf (first v)))
               a))
           {}
           (partition 2 (partition-by #(.startsWith % "-") args))))
