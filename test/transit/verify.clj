@@ -1,18 +1,23 @@
 (ns transit.verify
   (:require [transit.read :as r]
             [transit.write :as w]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [transit.generators :as gen]
+            [transit.corner-cases :as cc])
   (:import [java.io PrintStream ByteArrayOutputStream ByteArrayInputStream
             BufferedInputStream BufferedOutputStream FileInputStream]
            [java.util Arrays]
            [org.apache.commons.codec.binary Hex]))
+
+(def TIMEOUT 10000)
 
 (def ^:dynamic *color* false)
 
 (def colors {:reset "[0m"
              :red "[31m"
              :yellow "[33m"
-             :green "[32m"})
+             :green "[32m"
+             :bright "[1m"})
 
 (defn with-color [color & strs]
   (let [s (apply str (interpose " " strs))]
@@ -46,7 +51,7 @@
           r (r/reader in encoding)]
       (r/read r))
     (catch Throwable e
-      ::error)))
+      ::read-error)))
 
 (defn start-process [command encoding]
   ;; TODO: what if there is execption here? need to report that we
@@ -62,7 +67,9 @@
     (.write (:out proc) 3) ;; send Ctrl+C
     (.flush (:out proc))
     (.destroy (:p proc))
-    (catch Throwable e)))
+    (catch Throwable _
+      ;; TODO: report this?
+      )))
 
 (defn write-to-stream [proc transit-data]
   #_(println "Send bytes:")
@@ -70,44 +77,59 @@
   (.write (:out proc) transit-data 0 (count transit-data))
   (.flush (:out proc)))
 
-(let [continue? (fn [prev c counter open close]
-                  (cond (and (not= prev \^) (= c open)) inc
-                        (and (not= prev \^) (= c close)) (when (pos? (dec counter)) dec)
-                        :else identity))]
-  (defn read-from-stream [proc]
-    (let [bytes (ByteArrayOutputStream.)]
-      (loop [state :wait
-             counter 0
-             prev nil]
-        (let [b (.read (:in proc))]
-          (if (== b -1)
-            (.toByteArray bytes)
-            (let [c (char b)]
-              (case state
-                :wait (cond (= c \[) (do (.write bytes b)
-                                         (recur :array (inc counter) c))
-                            (= c \{) (do (.write bytes b)
-                                         (recur :object (inc counter) c))
-                            :else (recur state counter c))
-                :array (do (.write bytes b)
-                           (if-let [f (continue? prev c counter \[ \])]
-                             (recur state (f counter) c)
-                             (.toByteArray bytes)))
-                :object (do (.write bytes b)
-                            (if-let [f (continue? prev c counter \{ \})]
-                              (recur state (f counter) c)
-                              (.toByteArray bytes)))))))))))
+(defn read-from-stream [proc]
+  (let [bytes (ByteArrayOutputStream.)]
+    (loop [state `(:wait)
+           counter 0
+           prev nil]
+      (let [b (.read (:in proc))]
+        (if (== b -1)
+          (.toByteArray bytes)
+          (let [c (char b)]
+            (case (first state)
+              :wait (cond (= c \[) (do (.write bytes b)
+                                       (recur '(:array) (inc counter) c))
+                          (= c \{) (do (.write bytes b)
+                                       (recur '(:object) (inc counter) c))
+                          :else (recur state counter c))
+              :string (do (.write bytes b)
+                          (cond (and (= prev \\) (= c \\))
+                                ;; set prev to non-escape char
+                                (recur state counter \space)
+                                (and (not= prev \\) (= c \"))
+                                (recur (rest state) counter c)
+                                :else (recur state counter c)))
+              :array (do (.write bytes b)
+                         (cond (and (not= prev \\) (= c \"))
+                               (recur (conj state :string) counter c)
+                               (and (= c \[))
+                               (recur state (inc counter) c)
+                               (and (= c \]) (pos? (dec counter)))
+                               (recur state (dec counter) c)
+                               (= c \])
+                               (.toByteArray bytes)
+                               :else (recur state counter c)))
+              :object (do (.write bytes b)
+                          (cond (and (not= prev \\) (= c \"))
+                                (recur (conj state :string) counter c)
+                                (and (= c \{))
+                                (recur state (inc counter) c)
+                                (and (= c \}) (pos? (dec counter)))
+                                (recur state (dec counter) c)
+                                (= c \})
+                                (.toByteArray bytes)
+                                :else (recur state counter c))))))))))
 
-(defn read-response [proc timeout-ms]
+(defn read-response [proc transit-out timeout-ms]
   (let [f (future (read-from-stream proc))]
     (let [response (deref f timeout-ms ::timeout)]
       (if (= response ::timeout)
-        (throw (ex-info "Response timeout" {:status :timeout :p proc}))
+        (throw (ex-info "Response timeout" {:status :timeout :p proc :transit transit-out}))
         response))))
 
-(defn roundtrip-transit [proc transit-out encoding compare-transit?]
+(defn roundtrip-transit [proc transit-out encoding]
   (write-to-stream proc transit-out)
-  (let [transit-in (read-response proc 10000)
+  (let [transit-in (read-response proc transit-out TIMEOUT)
         data-out (read-transit transit-out encoding)
         data-in (read-transit transit-in encoding)]
     #_(println "Response bytes:")
@@ -119,43 +141,42 @@
      :data-actual data-in
      ;; only checks the top level type
      :status (if (and (= (type data-out) (type data-in))
-                      (= data-out data-in)
-                      (or (not compare-transit?) (= (count transit-out) (count transit-in))))
+                      (= data-out data-in))
                :success
                :error)}))
 
-(defn roundtrip-edn [proc edn encoding compare-transit?]
-  (let [transit-out (write-transit edn encoding)
-        result (roundtrip-transit proc transit-out encoding compare-transit?)]
-    (if (not= edn (:data-actual result) (:data-expected result))
-      (assoc result :status :warning :edn edn)
-      result)))
+(defn roundtrip-edn [proc edn encoding]
+  (try
+    (let [transit-out (write-transit edn encoding)
+          result (roundtrip-transit proc transit-out encoding)]
+      (if (not (or (= (:status result) :error)
+                   (= edn (:data-actual result) (:data-expected result))))
+        (assoc result :status :warning :edn edn)
+        result))
+    (catch Throwable e
+      (if (= (-> e ex-data :status) :timeout)
+        (throw (ex-info "Response timeout" (assoc (ex-data e) :edn edn)))
+        (throw e)))))
 
 (def extension {:json ".json"
                 :msgpack ".mp"})
 
-(defn test-sample-files
-  ([proc encoding] (test-sample-files proc encoding false))
-  ([proc encoding compare-transit?]
-     (let [files (filter #(and (.isFile %) (.endsWith (.getName %) (extension encoding)))
-                         (file-seq (io/file "../transit/simple-examples")))]
-       ;; TODO: This is not working with msgpack
-       ;; I don't think you can treat it as strings
-       (mapv #(roundtrip-transit proc (read-bytes %) encoding compare-transit?)
-             files))))
+(defn test-exemplar-files [proc encoding]
+  (let [files (filter #(and (.isFile %) (.endsWith (.getName %) (extension encoding)))
+                      (file-seq (io/file "../transit/simple-examples")))]
+    (mapv #(roundtrip-transit proc (read-bytes %) encoding)
+          files)))
 
-(defn test-edn
-  ([proc encoding] (test-edn proc encoding false))
-  ([proc encoding compare-transit?]
-     ;; TODO: add generators
-     ;; TODO: could still have some enumerated corner cases like this
-     (let [forms [nil true false :a :foo 'f 'foo (java.util.Date.) 1/3 \t "f" "foo" "~foo"
-                  [1 24 3] `(7 23 5) {:foo :bar} #{:a :b :c} 0 42
-                  8987676543234565432178765987645654323456554331234566789]]
-       (mapv #(roundtrip-edn proc % encoding compare-transit?)
-             forms))))
+(defn test-corners-of-edn [proc encoding]
+  (mapv #(roundtrip-edn proc % encoding) cc/forms))
 
-(defn verify-impl-encoding [command encoding]
+(defn test-corners-of-transit-json [proc encoding]
+  (mapv #(roundtrip-transit proc (.getBytes %) encoding) cc/transit-json))
+
+(defn test-generated-edn [forms proc encoding]
+  (mapv #(roundtrip-edn proc % encoding) forms))
+
+(defn verify-impl-encoding [command encoding opts]
   (assert (contains? extension encoding)
           (str "encoding must be on of" (keys extension)))
   (let [proc (start-process command encoding)
@@ -163,8 +184,12 @@
                  :encoding encoding}]
     (try
       (let [results (-> results
-                        (assoc-in [:tests :sample-file] (test-sample-files proc encoding ))
-                        (assoc-in [:tests :sample-edn] (test-edn proc encoding)))]
+                        (assoc-in [:tests :exemplar-file] (test-exemplar-files proc encoding))
+                        (assoc-in [:tests :corner-case-edn] (test-corners-of-edn proc encoding))
+                        (assoc-in [:tests :corner-case-transit-json]
+                                  (test-corners-of-transit-json proc encoding))
+                        (assoc-in [:tests :generated-edn]
+                                  (test-generated-edn (:generated-forms opts) proc encoding)))]
         (stop-process proc)
         results)
       (catch Throwable e
@@ -179,14 +204,21 @@
   (:exception results))
 
 (defn not-implemented? [results]
-  (every? #(= (:data-actual %) ::error) (apply concat (vals (:tests results)))))
+  (every? #(= (:data-actual %) ::read-error) (apply concat (vals (:tests results)))))
 
-(defn report [{:keys [project command encoding tests] :as results}]
-  (println "Project: " project)
+(defn report [{:keys [project command encoding tests] :as results} opts]
+  (println (with-color :bright "Project: " project))
   (println "Command: " command)
   (println "Encoding:" encoding)
   (cond (timeout? results)
-        (println (with-color :red "Response Timeout"))
+        (let [timeout-form (-> results :exception ex-data :edn)
+              [prev curr] (first (filter #(= (last %) timeout-form)
+                                         (partition 2 1 (:generated-forms opts))))]
+          (println (with-color :red "Response Timeout"))
+          (println (with-color :red "Timeout while processing:"))
+          (println (pr-str timeout-form))
+          (println (with-color :red "Previous form was:"))
+          (println (pr-str prev)))
         (exception? results)
         (do (println results)
             (.printStackTrace (:exception results)))
@@ -207,23 +239,24 @@
                        "passed:" pcnt
                        ", errors:" ecnt
                        ", warnings:" wcnt))
-            (cond (pos? wcnt)
+            (cond (pos? ecnt)
+                  (do (doseq [error errors]
+                        (println "Expected:" (pr-str (:transit-expected error)))
+                        (println "Actual:  " (pr-str (:transit-actual error)))))
+                  (pos? wcnt)
                   (do (doseq [warn warnings]
                         (println "Expected:" (pr-str (:edn warn)))
                         (println "Actual:  " (pr-str (:data-actual warn)))
                         (println "Sent Transit:    " (pr-str (:transit-expected warn)))
-                        (println "Received Transit:" (pr-str (:transit-actual warn)))))
-                  (pos? ecnt)
-                  (do (doseq [error errors]
-                        (println "Expected:" (pr-str (:transit-expected error)))
-                        (println "Actual:  " (pr-str (:transit-actual error))))))))))
+                        (println "Received Transit:" (pr-str (:transit-actual warn))))))))))
 
 (defn- run-test [project encoding opts]
   (let [command (str "../" project "/bin/roundtrip")]
     (if (= encoding :msgpack)
       (println "msgpack tests are disabled until we have a working implementation.")
-      (report (-> (verify-impl-encoding command encoding)
-                  (assoc :project project))))))
+      (report (-> (verify-impl-encoding command encoding opts)
+                  (assoc :project project))
+              opts))))
 
 (defn verify-impl [project {:keys [enc] :as opts}]
   (doseq [e (if enc [enc] [:json :msgpack])]
@@ -233,17 +266,17 @@
   (let [root (io/file "../")
         testable-impls (keep #(let [script (io/file root (str % "/bin/roundtrip"))]
                                 (when (.exists script) %))
-                             (.list root))]
+                             (.list root))
+        forms (take 100 (repeatedly gen/ednable))]
     (doseq [impl testable-impls]
       (when (or (not impls)
                 (contains? impls impl))
-        (verify-impl impl opts)))))
+        (verify-impl impl (assoc opts :generated-forms forms))))))
 
 (defn read-options [args]
   (reduce (fn [a [[k] v]]
             (case k
               "-impls" (assoc a :impls (set (mapv #(str "transit-" %) v)))
-              "-check-transit" (assoc a :check-transit (= "true" (first v)))
               "-enc" (assoc a :enc (keyword (first v)))
               a))
           {}

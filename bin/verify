@@ -2,15 +2,15 @@
 
 cd `dirname $0`/..
 
-IMPLS="$@"
+ARGS="$@"
 
 bin/get-transit
 
-if [ -z "$IMPLS" ] || [[ $IMPLS == *java* ]]; then
+if [ -z "$ARGS" ] || [[ $ARGS == *java* ]]; then
   bin/get-transit-java
 fi
 
-if [ -z "$IMPLS" ] || [[ $IMPLS == *ruby* ]]; then
+if [ -z "$ARGS" ] || [[ $ARGS == *ruby* ]]; then
   bin/get-transit-ruby
 fi
 
