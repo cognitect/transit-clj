@@ -47,7 +47,7 @@ Testing `transit-clj` requires Leiningen.
 
 Testing `transit-java` requires Maven.
 
-Testing `transit-ruby` requires Ruby 1.9.
+Testing `transit-ruby` requires Ruby 1.9 and Bundler `gem install bundler`.
 
 
 ### Supporting testing
