@@ -26,7 +26,7 @@ then both with be tested.
 The `-impls` option can be any languange implementation. `clj` will
 test `transit-clj` and `ruby` will test `transit-ruby`. If this option
 is omitted then it will attempt to test all implementations. Multiple
-languages can be specified
+languages can be specified.
 
 ```
 bin/verify -impls clj ruby
@@ -38,7 +38,17 @@ To test everything run:
 bin/verify
 ```
 
-Tests are currently limited to json and a few EDN examples.
+There is also a `-gen` option to run generative tests. The following usage
+
+```
+bin/verify -gen 100
+```
+
+will generate 100 random edn structures. There are still some issues
+around equality testing that need to be fixed to eliminate false
+positives.
+
+Tests are currently limited to json.
 
 
 ### Test requirements
@@ -56,7 +66,7 @@ The only requirement for an implementation to be testable is that it
 have a script named `roundtrip` in its `bin` directory. This script
 must start a process which accepts transit data on standard in and
 returns transit data on standard out. The process should read the
-transit data, the write it to standard out.
+transit data, then write it to standard out.
 
 The script must take one argument which can be either `json` or
 `msgpack` which will be used to setup the correct encoding.
@@ -66,7 +76,7 @@ The script must take one argument which can be either `json` or
 
 Add bin/roundtrip scripts for the other implementations
 Get it working with msgpack
-Add generative tests
+Improve equality testing for generative tests (compariting floats returned from Ruby)
 
 ## License
 
