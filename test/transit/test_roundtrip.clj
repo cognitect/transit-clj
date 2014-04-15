@@ -1,3 +1,6 @@
+;; Copyright (c) Cognitect, Inc.
+;; All rights reserved.
+
 (ns transit.test-roundtrip
   (:require [transit.read :as r]
             [transit.write :as w]))
