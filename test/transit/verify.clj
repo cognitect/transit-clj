@@ -124,7 +124,7 @@
 
 (defn test-timing [transits proc encoding]
   (println "collecting timing information...")
-  (dotimes [x 10000]
+  (dotimes [x 100]
     (mapv #(roundtrip-transit proc % encoding) transits))
   (let [start (System/currentTimeMillis)]
     (mapv #(roundtrip-transit proc % encoding) transits)
