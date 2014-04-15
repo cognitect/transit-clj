@@ -259,8 +259,12 @@
   java.lang.Object
   (equals [t o]
     (and (= (type o) (type t))
-         (= (.tag ^TaggedValue t) (.tag ^TaggedValue o))
-         (= (.rep ^TaggedValue t) (.rep ^TaggedValue o)))))
+         (= (.tag t) (.tag ^TaggedValue o))
+         (= (.rep t) (.rep ^TaggedValue o))))
+  (hashCode [t]
+    (reduce unchecked-multiply-int
+            17
+            [31 (.hashCode (.tag t)) 31 (.hashCode (.rep t))])))
 
 (defn tagged-value [tag rep] (TaggedValue. tag rep))
 
