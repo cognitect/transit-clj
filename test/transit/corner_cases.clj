@@ -1,3 +1,6 @@
+;; Copyright (c) Cognitect, Inc.
+;; All rights reserved.
+
 (ns transit.corner-cases)
 
 (def forms
@@ -47,4 +50,6 @@
    "{\"foo\":\"~xfoo\"}"
    "{\"~/t\":null}"
    "{\"~/f\":null}"
+   "{\"~#'\":\"~f-1.1E-1\"}"
+   "{\"~#'\":\"~f-1.10E-1\"}"
    ])
