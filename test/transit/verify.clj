@@ -19,7 +19,8 @@
             [transit.generators :as gen]
             [transit.corner-cases :as cc])
   (:import [java.io PrintStream ByteArrayOutputStream ByteArrayInputStream
-            BufferedInputStream BufferedOutputStream FileInputStream]))
+            BufferedInputStream BufferedOutputStream FileInputStream]
+           [org.apache.commons.codec.binary Hex]))
 
 (def TIMEOUT
   "Timeout for roundtrip requests to native implementation"
@@ -97,6 +98,9 @@
   data to the output stream. Throws an exception of the output stream
   is closed."
   [proc transit-data]
+  #_(println "Send bytes:")
+  #_(println (count transit-data))
+  #_(println (Hex/encodeHexString transit-data))
   (try
     (.write (:out proc) transit-data 0 (count transit-data))
     (.flush (:out proc))
@@ -161,7 +165,6 @@
   transit enconding, record the time in milliseconds that it takes
   to roundtrip all of the transit messages."
   [transits proc encoding]
-  (println "collecting timing information...")
   (dotimes [x 200]
     (mapv #(roundtrip-transit proc % encoding) transits))
   (let [start (System/nanoTime)]
@@ -190,18 +193,23 @@
   (let [transit-exemplars (exemplar-transit encoding)]
     (filter #((:pred %) proc encoding opts)
             [{:pred (constantly true)
+              :desc "exemplar file"
               :path [:tests :exemplar-file]
               :test #(test-transit transit-exemplars proc encoding)}
              {:pred (constantly true)
+              :desc "EDN corner case"
               :path [:tests :corner-case-edn]
               :test #(test-edn cc/forms proc encoding)}
              {:pred (fn [_ e _] (= e :json))
+              :desc "JSON transit corner case"
               :path [:tests :corner-case-transit-json]
               :test #(test-transit (map (fn [s] (.getBytes s)) cc/transit-json) proc encoding)}
              {:pred (fn [_ _ o] (:gen o))
+              :desc "generated EDN"
               :path [:tests :generated-edn]
               :test #(test-edn (:generated-forms opts) proc encoding)}
              {:pred (fn [_ _ o] (:time o))
+              :desc "timing"
               :path [:time]
               :test #(let [ms (test-timing transit-exemplars proc encoding)]
                        {:ms ms
@@ -225,7 +233,10 @@
                  :encoding encoding}]
     (try
       (let [tests (filter-tests proc encoding opts)
-            results (reduce (fn [r {:keys [path test]}]
+            results (reduce (fn [r {:keys [path test desc]}]
+                              (println (format "running \"%s\" test for %s encoding..."
+                                               desc
+                                               (name encoding)))
                               (assoc-in r path (test)))
                             results
                             tests)]
@@ -241,13 +252,13 @@
   "Given a project name, an encoding and user provided options, run
   tests against this project."
   [project encoding opts]
-  (println "testing" project "...")
+  (println (format "testing %s's %s encoding"
+                   project
+                   (name encoding)))
   (let [command (str "../" project "/bin/roundtrip")]
-    (if (= encoding :msgpack)
-      (println "msgpack tests are disabled until we have a working implementation.")
-      (report (-> (verify-impl-encoding command encoding opts)
-                  (assoc :project project))
-              opts))))
+    (report (-> (verify-impl-encoding command encoding opts)
+                (assoc :project project))
+            opts)))
 
 (defn verify-impl
   "Given a project name like 'transit-java', 'transit-clj' or
