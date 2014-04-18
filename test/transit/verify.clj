@@ -4,7 +4,7 @@
 (ns transit.verify
   "Provides tools for testing all transit implementations at
   once. Tests each implementaion with several sources of data:
-  exemplar files, problem edn data, problem transit data and generated
+  exemplar files, problem EDN data, problem transit data and generated
   data. In addition, it can capture comparative timing results.
 
   From the REPL, the main entry point is `verify-all` which takes an
@@ -62,7 +62,14 @@
     (catch Throwable e
       ::read-error)))
 
-(defn start-process [command encoding]
+(defn start-process
+  "Given a command and enconding, start a process which can roundtrip
+  transit data. The command is the path to any program which will
+  start a roundtrip process. The enconding must be either `:json` or
+  `:msgpack`. Returns a map (process map) with keys `:out` the output
+  stream which can be used to send data to the process, `:p` the
+  process and `:reader` a transit reader."
+  [command encoding]
   ;; TODO: what if there is exception here? need to report that we
   ;; couldn't start the process?
   ;; TODO: how do we communicate that the encoding is not supported?
@@ -72,7 +79,11 @@
     ;; r/reader does not return until data starts to flow over in
     {:out out :p p :reader (future (r/reader in encoding))}))
 
-(defn stop-process [proc]
+(defn stop-process
+  "Given a process, stop the process started by
+  `start-process`. Sends Ctrl-C (SIGINT) to the process before
+  attempting to destroy the process."
+  [proc]
   (try
     (.write (:out proc) 3) ;; send Ctrl+C
     (.flush (:out proc))
@@ -81,64 +92,101 @@
       (println "WARNING! Exception while stopping process.")
       (println (.toString e)))))
 
-;; TODO: failure to write means that the process has died
-;; catch and throw the way we do with read-response
-(defn write-to-stream [proc transit-data]
-  (.write (:out proc) transit-data 0 (count transit-data))
-  (.flush (:out proc)))
+(defn write-to-stream
+  "Given a process and a byte array of transit data, write this
+  data to the output stream. Throws an exception of the output stream
+  is closed."
+  [proc transit-data]
+  (try
+    (.write (:out proc) transit-data 0 (count transit-data))
+    (.flush (:out proc))
+    (catch Throwable _
+      (throw (ex-info "Disconnected" {:status :disconnected :p proc :transit transit-data})))))
 
-(defn read-response [proc transit-out timeout-ms]
+(defn read-response
+  "Given a process and a timeout in milliseconds, attempt to read
+  a transit value.  If the read times out, returns `::timeout`.`"
+  [proc timeout-ms]
   (let [f (future (r/read @(:reader proc)))]
-    (let [response (deref f timeout-ms ::timeout)]
-      (if (= response ::timeout)
-        (throw (ex-info "Response timeout" {:status :timeout :p proc :transit transit-out}))
-        response))))
+    (deref f timeout-ms ::timeout)))
 
-(defn roundtrip-transit [proc transit-out encoding]
+(defn roundtrip-transit
+  "Given a process, a byte array of transit data and an encoding,
+  roundtrip the transit data and return a map of test results. Throws
+  an exception if sending transit data causes a timeout. The results
+  map contains the expected and actual Clojure data and the test
+  status: one of `:error` or `:success`."
+  [proc transit-out encoding]
   (write-to-stream proc transit-out)
-  (let [data-in (read-response proc transit-out TIMEOUT)
+  (let [data-in (read-response proc TIMEOUT)
         data-out (read-transit transit-out encoding)]
-    {:transit-expected (String. transit-out)
-     :data-expected data-out
-     :data-actual data-in
-     ;; only checks the top level type
-     :status (if (and (= (type data-out) (type data-in))
-                      (= data-out data-in))
-               :success
-               :error)}))
+    (if (= data-in ::timeout)
+      (throw (ex-info "Response timeout" {:status :timeout :p proc :transit transit-out}))
+      {:transit-expected (String. transit-out)
+       :data-expected data-out
+       :data-actual data-in
+       ;; only checks the top level type
+       :status (if (and (= (type data-out) (type data-in))
+                        (= data-out data-in))
+                 :success
+                 :error)})))
 
-(defn roundtrip-edn [proc edn encoding]
+(defn roundtrip-edn
+  "Given a process, an EDN form and an encoding, roundtrip the EDN
+  data and return a map of test results. See `roundtrip-transit`."
+  [proc edn encoding]
   (try
     (let [transit-out (write-transit edn encoding)]
       (roundtrip-transit proc transit-out encoding))
     (catch Throwable e
-      (if (= (-> e ex-data :status) :timeout)
-        (throw (ex-info "Response timeout" (assoc (ex-data e) :edn edn)))
+      (if (contains? #{:disconnected :timeout} (-> e ex-data :status) )
+        (throw (ex-info (.getMessage e) (assoc (ex-data e) :edn edn)))
         (throw e)))))
 
-(defn test-transit [transits proc encoding]
+(defn test-transit
+  "Given a collection of transit byte arrays, a process and the
+  transit enconding, roundtrip each transit message and return a
+  sequence of results."
+  [transits proc encoding]
   (mapv #(roundtrip-transit proc % encoding) transits))
 
-(defn test-edn [forms proc encoding]
+(defn test-edn
+  "Given a collection of EDN forms, a process and a transit
+  enconding, roundtrip each form and return a sequence of results."
+  [forms proc encoding]
   (mapv #(roundtrip-edn proc % encoding) forms))
 
-(defn test-timing [transits proc encoding]
+(defn test-timing
+  "Given a collection of transit byte arrays, a process and the
+  transit enconding, record the time in milliseconds that it takes
+  to roundtrip all of the transit messages."
+  [transits proc encoding]
   (println "collecting timing information...")
-  (dotimes [x 100]
+  (dotimes [x 200]
     (mapv #(roundtrip-transit proc % encoding) transits))
-  (let [start (System/currentTimeMillis)]
+  (let [start (System/nanoTime)]
     (mapv #(roundtrip-transit proc % encoding) transits)
-    (- (System/currentTimeMillis) start)))
+    (quot (- (System/nanoTime) start) 1000000)))
 
 (def extension {:json ".json"
                 :msgpack ".mp"})
 
-(defn exemplar-transit [encoding]
+(defn exemplar-transit
+  "Given an encoding, return a collection of transit byte arrays in
+  that encoding. The byte arrays are loaded from the exemplar files in
+  the `transit` repository."
+  [encoding]
   (map #(read-bytes %)
        (filter #(and (.isFile %) (.endsWith (.getName %) (extension encoding)))
                (file-seq (io/file "../transit/simple-examples")))))
 
-(defn filter-tests [proc encoding opts]
+(defn filter-tests
+  "Given a process, an encoding and options provided by the user,
+  return a sequcnes of tests to run. Each test is represented as a map
+  with `:path` and `:test` keys. The value at `:path` is the path into
+  the results where the test results are to be stored. The value at
+  `:test` is a no argument function which will run a single test."
+  [proc encoding opts]
   (let [transit-exemplars (exemplar-transit encoding)]
     (filter #((:pred %) proc encoding opts)
             [{:pred (constantly true)
@@ -160,7 +208,16 @@
                         :count (count transit-exemplars)
                         :encoding encoding})}])))
 
-(defn verify-impl-encoding [command encoding opts]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Running Tests
+
+(defn verify-impl-encoding
+  "Given a command string, an encoding and user provided options, run
+  a collection of tests against a specific implementation of
+  transit. The tests which are run are determined by the provided
+  options and the encoding. The implementation which is tested is
+  determined by the provided command string."
+  [command encoding opts]
   (assert (contains? extension encoding)
           (str "encoding must be on of" (keys extension)))
   (let [proc (start-process command encoding)
@@ -180,7 +237,10 @@
 
 (declare report)
 
-(defn- run-test [project encoding opts]
+(defn- run-test
+  "Given a project name, an encoding and user provided options, run
+  tests against this project."
+  [project encoding opts]
   (println "testing" project "...")
   (let [command (str "../" project "/bin/roundtrip")]
     (if (= encoding :msgpack)
@@ -189,11 +249,20 @@
                   (assoc :project project))
               opts))))
 
-(defn verify-impl [project {:keys [enc] :as opts}]
+(defn verify-impl
+  "Given a project name like 'transit-java', 'transit-clj' or
+  'transit-ruby', and user provided options, run tests for each
+  encoding specified in the options. Encoding can be either `:json` or
+  `:msgpack`."
+  [project {:keys [enc] :as opts}]
   (doseq [e (if enc [enc] [:json :msgpack])]
     (run-test project e opts)))
 
-(defn verify-all [{:keys [impls] :as opts}]
+(defn verify-all
+  "Given user provided options, run all tests specified by the
+  options. If options is an empty map then run all tests against all
+  implementations for both encodings."
+  [{:keys [impls] :as opts}]
   (let [root (io/file "../")
         testable-impls (keep #(let [script (io/file root (str % "/bin/roundtrip"))]
                                 (when (.exists script) %))
@@ -205,7 +274,10 @@
                 (contains? impls impl))
         (verify-impl impl (assoc opts :generated-forms forms))))))
 
-(defn read-options [args]
+(defn read-options
+  "Given a sequence of strings which are the command line arguments,
+  return an options map."
+  [args]
   (reduce (fn [a [[k] v]]
             (case k
               "-impls" (assoc a :impls (set (mapv #(str "transit-" %) v)))
