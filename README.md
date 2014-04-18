@@ -48,6 +48,12 @@ will generate 100 random edn structures. There are still some issues
 around equality testing that need to be fixed to eliminate false
 positives.
 
+Timing information can also be collected for each implementation.
+
+```
+bin/verify -time
+```
+
 Tests are currently limited to json.
 
 
