@@ -13,14 +13,16 @@
   directories which have a `bin/roundtrip` script. Options can be used
   to control which project is tested, which encoding to test, turn on
   generative testing and collect timing information."
-  (:require [transit.read :as r]
+  (:require [clojure.java.io :as io]
+            [clojure.walk :as walk]
+            [transit.read :as r]
             [transit.write :as w]
-            [clojure.java.io :as io]
             [transit.generators :as gen]
             [transit.corner-cases :as cc])
   (:import [java.io PrintStream ByteArrayOutputStream ByteArrayInputStream
             BufferedInputStream BufferedOutputStream FileInputStream]
-           [org.apache.commons.codec.binary Hex]))
+           [org.apache.commons.codec.binary Hex]
+           [java.math MathContext]))
 
 (def TIMEOUT
   "Timeout for roundtrip requests to native implementation"
@@ -114,6 +116,13 @@
   (let [f (future (r/read @(:reader proc)))]
     (deref f timeout-ms ::timeout)))
 
+(defn equalize [data]
+  (walk/prewalk (fn [node]
+                  (if (instance? java.math.BigDecimal node)
+                    (.stripTrailingZeros node)
+                    node))
+                data))
+
 (defn roundtrip-transit
   "Given a process, a byte array of transit data and an encoding,
   roundtrip the transit data and return a map of test results. Throws
@@ -121,19 +130,22 @@
   map contains the expected and actual Clojure data and the test
   status: one of `:error` or `:success`."
   [proc transit-out encoding]
-  (write-to-stream proc transit-out)
-  (let [data-in (read-response proc TIMEOUT)
-        data-out (read-transit transit-out encoding)]
-    (if (= data-in ::timeout)
-      (throw (ex-info "Response timeout" {:status :timeout :p proc :transit transit-out}))
-      {:transit-expected (String. transit-out)
-       :data-expected data-out
-       :data-actual data-in
-       ;; only checks the top level type
-       :status (if (and (= (type data-out) (type data-in))
-                        (= data-out data-in))
-                 :success
-                 :error)})))
+  (let [start (System/nanoTime)]
+    (write-to-stream proc transit-out)
+    (let [data-in (read-response proc TIMEOUT)
+          end (System/nanoTime)
+          data-out (read-transit transit-out encoding)]
+      (if (= data-in ::timeout)
+        (throw (ex-info "Response timeout" {:status :timeout :p proc :transit transit-out}))
+        {:transit-expected (String. transit-out)
+         :data-expected data-out
+         :data-actual data-in
+         :nano-time (- end start)
+         ;; only checks the top level type
+         :status (if (and (= (type data-out) (type data-in))
+                          (= (equalize data-out) (equalize data-in)))
+                   :success
+                   :error)}))))
 
 (defn roundtrip-edn
   "Given a process, an EDN form and an encoding, roundtrip the EDN
@@ -167,9 +179,9 @@
   [transits proc encoding]
   (dotimes [x 200]
     (mapv #(roundtrip-transit proc % encoding) transits))
-  (let [start (System/nanoTime)]
-    (mapv #(roundtrip-transit proc % encoding) transits)
-    (quot (- (System/nanoTime) start) 1000000)))
+  (quot (reduce + (map :nano-time
+                       (mapv #(roundtrip-transit proc % encoding) transits)))
+        1000000))
 
 (def extension {:json ".json"
                 :msgpack ".mp"})
@@ -194,24 +206,29 @@
     (filter #((:pred %) proc encoding opts)
             [{:pred (constantly true)
               :desc "exemplar file"
+              :input transit-exemplars
               :path [:tests :exemplar-file]
-              :test #(test-transit transit-exemplars proc encoding)}
+              :test #(test-transit % proc encoding)}
              {:pred (constantly true)
               :desc "EDN corner case"
+              :input cc/forms
               :path [:tests :corner-case-edn]
-              :test #(test-edn cc/forms proc encoding)}
+              :test #(test-edn % proc encoding)}
              {:pred (fn [_ e _] (= e :json))
               :desc "JSON transit corner case"
+              :input (map (fn [s] (.getBytes s)) cc/transit-json)
               :path [:tests :corner-case-transit-json]
-              :test #(test-transit (map (fn [s] (.getBytes s)) cc/transit-json) proc encoding)}
+              :test #(test-transit % proc encoding)}
              {:pred (fn [_ _ o] (:gen o))
               :desc "generated EDN"
+              :input (:generated-forms opts)
               :path [:tests :generated-edn]
-              :test #(test-edn (:generated-forms opts) proc encoding)}
+              :test #(test-edn % proc encoding)}
              {:pred (fn [_ _ o] (:time o))
               :desc "timing"
+              :input transit-exemplars
               :path [:time]
-              :test #(let [ms (test-timing transit-exemplars proc encoding)]
+              :test #(let [ms (test-timing % proc encoding)]
                        {:ms ms
                         :count (count transit-exemplars)
                         :encoding encoding})}])))
@@ -233,11 +250,11 @@
                  :encoding encoding}]
     (try
       (let [tests (filter-tests proc encoding opts)
-            results (reduce (fn [r {:keys [path test desc]}]
+            results (reduce (fn [r {:keys [path test desc input]}]
                               (println (format "running \"%s\" test for %s encoding..."
                                                desc
                                                (name encoding)))
-                              (assoc-in r path (test)))
+                              (assoc-in r path (test input)))
                             results
                             tests)]
         (stop-process proc)
@@ -255,12 +272,14 @@
   (println (format "testing %s's %s encoding"
                    project
                    (name encoding)))
-  (let [command (str "../" project "/bin/roundtrip")]
-    (report (-> (verify-impl-encoding command encoding opts)
-                (assoc :project project))
-            opts)))
+  (if (= encoding :msgpack)
+    (println "msgpack tests are disabled until we have a working implementation.")
+    (let [command (str "../" project "/bin/roundtrip")]
+      (report (-> (verify-impl-encoding command encoding opts)
+                  (assoc :project project))
+              opts))))
 
-(defn verify-impl
+  (defn verify-impl
   "Given a project name like 'transit-java', 'transit-clj' or
   'transit-ruby', and user provided options, run tests for each
   encoding specified in the options. Encoding can be either `:json` or
@@ -320,20 +339,61 @@
       (str \u001b (style styles) s \u001b (:reset styles))
       s)))
 
-(defn timeout-result? [results]
-  (when-let [e (:exception results)]
-    (= (:status (ex-data e)) :timeout)))
+(defn result-type [results]
+  (cond (= (:status (ex-data (:exception results))) :timeout)
+        :timeout
+        (= (:status (ex-data (:exception results))) :disconnected)
+        :disconnected
+        (:exception results)
+        :exception
+        (every? #(= (:data-actual %) ::read-error) (apply concat (vals (:tests results))))
+        :not-implemented))
 
-(defn exception-result? [results]
-  (:exception results))
+(defmulti print-report (fn [results opts] (result-type results)))
 
-(defn not-implemented? [results]
-  (every? #(= (:data-actual %) ::read-error) (apply concat (vals (:tests results)))))
+(defmethod print-report :timeout [results opts]
+  (let [timeout-form (-> results :exception ex-data :edn)
+        [prev curr] (first (filter #(= (last %) timeout-form)
+                                   ;; TODO: timeout could occur
+                                   ;; in other kinds of tests
+                                   (partition 2 1 (:generated-forms opts))))]
+    (println (with-style :red "Response Timeout"))
+    (println (with-style :red "Timeout while processing:"))
+    (println (pr-str timeout-form))
+    (println (with-style :red "Previous form was:"))
+    (println (pr-str prev))))
 
-;; TODO: when there is an exception, print out the form that was being
-;; transmitted
-;; TODO: would be nice if we could do the same thing we do with
-;; timeouts and show the previous thing as well
+(defmethod print-report :disconnected [results opts]
+  (let [error-form (-> results :exception ex-data :transit)]
+    (println (with-style :red "Implementation Disconnected"))
+    (println (with-style :red "Disconnect when sending:"))
+    (println (pr-str (String. error-form)))))
+
+(defmethod print-report :exception [results opts]
+  (do (println results)
+      (.printStackTrace (:exception results))))
+
+(defmethod print-report :not-implemented [results opts]
+  (println (with-style :red "Not Implemented")))
+
+(defmethod print-report :default [results opts]
+  ;; TODO: need to do something better for printing transit data
+  ;; (when bytes)
+  (doseq [[k v] (:tests results)]
+    (let [errors (filter #(= (:status %) :error) v)
+          ecnt (count errors)
+          pcnt (- (count v) ecnt)
+          style (if (pos? ecnt) :red :green)]
+      (println (with-style style (format "Testing with %s %s inputs"
+                                         (count v) k)))
+      (println (with-style style (format "Summary: passed: %s, errors: %s"
+                                         pcnt ecnt)))
+      (when (pos? ecnt)
+        (do (doseq [error errors]
+              (println "Sent Transit:" (pr-str (:transit-expected error)))
+              (println "Expected:    " (pr-str (:data-expected error)))
+              (println "Actual:      " (pr-str (:data-actual error)))))))))
+
 (defn report [{:keys [project command encoding tests time] :as results} opts]
   (println (with-style :bright "Project: " project))
   (println "Command: " command)
@@ -344,34 +404,41 @@
                        (:ms time)
                        (:count time)
                        (name (:encoding time))))))
-  (cond (timeout-result? results)
-        (let [timeout-form (-> results :exception ex-data :edn)
-              [prev curr] (first (filter #(= (last %) timeout-form)
-                                         (partition 2 1 (:generated-forms opts))))]
-          (println (with-style :red "Response Timeout"))
-          (println (with-style :red "Timeout while processing:"))
-          (println (pr-str timeout-form))
-          (println (with-style :red "Previous form was:"))
-          (println (pr-str prev)))
-        (exception-result? results)
-        (do (println results)
-            (.printStackTrace (:exception results)))
-        (not-implemented? results)
-        (println (with-style :red "Not Implemented"))
-        :else
-        ;; TODO: need to do something better for printing transit data
-        ;; (when bytes)
-        (doseq [[k v] tests]
-          (let [errors (filter #(= (:status %) :error) v)
-                ecnt (count errors)
-                pcnt (- (count v) ecnt)
-                style (if (pos? ecnt) :red :green)]
-            (println (with-style style (format "Testing with %s %s inputs"
-                                               (count v) k)))
-            (println (with-style style (format "Summary: passed: %s, errors: %s"
-                                               pcnt ecnt)))
-            (when (pos? ecnt)
-              (do (doseq [error errors]
-                    (println "Sent Transit:" (pr-str (:transit-expected error)))
-                    (println "Expected:    " (pr-str (:data-expected error)))
-                    (println "Actual:      " (pr-str (:data-actual error))))))))))
+  (print-report results opts))
+
+(comment ;; example of problem with msgpack
+
+  (defn start-process  [command encoding]
+    (let [p (.start (ProcessBuilder. [command (name encoding)]))
+          out (BufferedOutputStream. (.getOutputStream p))
+          in (BufferedInputStream. (.getInputStream p))]
+      {:out out :p p :in in}))
+
+  (defn stop-process [proc]
+    (.write (:out proc) 3) ;; send Ctrl+C
+    (.flush (:out proc))
+    (.destroy (:p proc)))
+
+  (defn write-to-stream [proc transit-data]
+    (println "Send bytes:")
+    (println (count transit-data))
+    (println (Hex/encodeHexString transit-data))
+    (.write (:out proc) transit-data 0 (count transit-data))
+    (.flush (:out proc)))
+
+  (defn read-response [proc]
+    (println (.read (:in proc))))
+
+  ;; works
+  (def p (start-process "../transit-ruby/bin/roundtrip" :json))
+  (write-to-stream p (.getBytes "{\"~#'\":42}"))
+  (read-response p)
+  (stop-process p)
+
+  ;; doesn't work
+  (def p (start-process "../transit-ruby/bin/roundtrip" :msgpack))
+  (write-to-stream p (.getBytes "{\"~#'\":42}"))
+  (read-response p)
+  (stop-process p)
+
+)
