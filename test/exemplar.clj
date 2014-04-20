@@ -221,12 +221,12 @@
   (write-exemplar
     "maps_unrecognized_keys"
     "Vector of maps with keys with unrecognized encodings"
-    [{"`~#unrecognized" :anything} {"`~#U" :anything-else}])
+    [{"`~#unrecognized" :anything} {"`~#X" :anything-else}])
 
   (write-exemplar
     "map_unrecognized_vals"
     "Map with vals with unrecognized encodings"
-    {:key "`~unrecognized"})
+    {:key "`~notrecognized"})
 
   (write-exemplar
     "vector_93_keywords_repeated_twice"
@@ -246,4 +246,4 @@
   (write-exemplar
     "vector_unrecognized_vals"
     "Vector with vals with unrecognized encodings"
-    ["`~unrecognized"]))
+    ["`~notrecognized"]))
