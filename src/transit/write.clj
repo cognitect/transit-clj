@@ -67,7 +67,7 @@
   (if (> (.length s) 0)
     (let [c (subs s 0 1)]
       (cond (= RESERVED c)
-            (str ESC (subs s 1))
+            (subs s 1)
 
             (or (= ESC c) (= SUB c))
             (str ESC s)
