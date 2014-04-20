@@ -221,7 +221,7 @@
   (write-exemplar
     "maps_unrecognized_keys"
     "Vector of maps with keys with unrecognized encodings"
-    [{"`~#unrecognized" :anything} {"`~#X" :anything-else}])
+    [{"`~#abcde" :anything} {"`~#fghij" :anything-else}])
 
   (write-exemplar
     "map_unrecognized_vals"
