@@ -103,7 +103,7 @@
   ReadCache
   (cache-read [_ str as-map-key]
     ;;(prn "cache read before" idx str)
-    (let [res (if (and str (not (zero? (.length ^String str))))
+    (let [res (if (and str (> (.length ^String str) 1))
                 (if (w/cacheable? str as-map-key)
                   (do 
                     (when (= idx w/MAX_CACHE_ENTRIES)
