@@ -219,6 +219,16 @@
     [{"aaaa" 1 "bbbb" 2} {"aaaa" 3 "bbbb" 4} {"aaaa" 5 "bbbb" 6}])
 
   (write-exemplar
+    "maps_unrecognized_keys"
+    "Vector of maps with keys with unrecognized encodings"
+    [{"`~#unrecognized" :anything} {"`~#U" :anything-else}])
+
+  (write-exemplar
+    "map_unrecognized_vals"
+    "Map with vals with unrecognized encodings"
+    {:key "`~unrecognized"})
+
+  (write-exemplar
     "vector_93_keywords_repeated_twice"
     "Vector of 93 keywords, repeated twice"
     (vector-of-keywords 93 186))
@@ -231,4 +241,9 @@
   (write-exemplar
     "vector_95_keywords_repeated_twice"
     "Vector of 95 keywords, repeated twice"
-    (vector-of-keywords 95 190)))
+    (vector-of-keywords 95 190))
+
+  (write-exemplar
+    "vector_unrecognized_vals"
+    "Vector with vals with unrecognized encodings"
+    ["`~unrecognized"]))
