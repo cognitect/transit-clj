@@ -50,7 +50,7 @@
 (defn default-default-decoder
   [^String tag rep]
   (if (and (= (.length tag) 1) (string? rep))
-    (str "`" tag rep)
+    (str "`~" tag rep)
     (w/tagged-value tag rep)))
 
 (def ^:private ^:dynamic *default* default-default-decoder)
@@ -103,7 +103,7 @@
   ReadCache
   (cache-read [_ str as-map-key]
     ;;(prn "cache read before" idx str)
-    (let [res (if (and str (not (zero? (.length ^String str))))
+    (let [res (if (and str (> (.length ^String str) 1))
                 (if (w/cacheable? str as-map-key)
                   (do 
                     (when (= idx w/MAX_CACHE_ENTRIES)
