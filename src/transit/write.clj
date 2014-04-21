@@ -180,7 +180,7 @@
   (emit-map-end [^Packer p] (.writeMapEnd p))
   (emit-quoted [^Packer p o cache]
     (marshal p o false cache))
-  (flush-writer [_])
+  (flush-writer [^Packer p] (.flush p))
   (prefers-strings [_] false))
 
 (defn emit-ints
@@ -228,7 +228,7 @@
       (type (double-array 0)) (emit-doubles em iterable cache)
       (type (char-array 0)) (emit-chars em iterable cache)
       (type (boolean-array 0)) (emit-booleans em iterable cache)
-      :else (emit-objs em iterable cache)))
+      (emit-objs em iterable cache)))
   (emit-array-end em))
 
 (defn emit-map

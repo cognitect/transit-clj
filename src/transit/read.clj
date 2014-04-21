@@ -50,7 +50,7 @@
 (defn default-default-decoder
   [^String tag rep]
   (if (and (= (.length tag) 1) (string? rep))
-    (str "`" tag rep)
+    (str "`~" tag rep)
     (w/tagged-value tag rep)))
 
 (def ^:private ^:dynamic *default* default-default-decoder)
