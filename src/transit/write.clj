@@ -69,7 +69,7 @@
       (cond (and (= RESERVED c) (= ESC (subs s 1 2)))
             (subs s 1)
 
-            (or (= ESC c) (= SUB c))
+            (or (= ESC c) (= SUB c) (= RESERVED c))
             (str ESC s)
 
             :else s))))
