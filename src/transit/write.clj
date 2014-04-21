@@ -66,8 +66,8 @@
   [^String s]
   (if (> (.length s) 0)
     (let [c (subs s 0 1)]
-      (cond (= RESERVED c)
-            (str ESC (subs s 1))
+      (cond (and (= RESERVED c) (= ESC (subs s 1 2)))
+            (subs s 1)
 
             (or (= ESC c) (= SUB c))
             (str ESC s)
@@ -366,7 +366,7 @@
    (tag [_ _] "?")
    (rep [_ b] b)
    (str-rep [_ b] (str b)))
-  
+
  java.lang.Byte
  (reify Handler
    (tag [_ _] "i")
@@ -562,7 +562,7 @@
 (extend-protocol Writerable
   OutputStream
   (make-writer [^OutputStream stm type opts]
-    (Writer. 
+    (Writer.
      (case type
        :json (.createGenerator (JsonFactory.) stm)
        :msgpack (.createPacker (MessagePack.) stm))
@@ -596,7 +596,3 @@
     (tag [_ o] (tag-fn o))
     (rep [_ o] (rep-fn o))
     (str-rep [_ o] (str-rep-fn o))))
-
-
-
-
