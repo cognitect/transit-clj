@@ -1,4 +1,4 @@
-(defproject transit-clj "0.1.0-SNAPSHOT"
+(defproject transit-clj (clojure.string/trimr (:out (clojure.java.shell/sh "build/version")))
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"

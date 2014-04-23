@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -e
+
+echo "Cleaning..."
+rm -rf ./target
+
+echo "Packaging..."
+lein compile
+lein install
+
+version=`build/version`
+target_name=transit-clj-${version}
+target_path=./target/${target_name}
+
+cp pom.xml ${target_path}.pom
+
+#echo "Copying LICENSE, README and CHANGES..."
+#cp KIT_README.md ${target_path}/README-CONSOLE.md
+#cp LICENSE ${target_path}/LICENSE
+#cp CHANGES.md ${target_path}/CHANGES.md
+
+echo "Done!"
