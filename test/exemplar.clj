@@ -4,17 +4,18 @@
 (ns exemplar
   (:require [transit.read :as r]
             [transit.write :as w]
-            [clojure.java.io :as io]))
+            [clojure.java.io :as io])
+  (:import [java.net URI]))
 
 ;; Generate a set of increasingly complex transit files.
 ;; Output checked into the transit repo under simple-examples.
 
 (import [java.io File FileOutputStream ByteArrayInputStream ByteArrayOutputStream OutputStreamWriter])
 
-(defn range-centered-on 
+(defn range-centered-on
   ([n] (range-centered-on n 5))
   ([n m] (vec (range (- n m) (+ n m 1)))))
-  
+
 (defn vmap [f s]
   (vec (map f s)))
 
@@ -28,7 +29,7 @@
     (apply
       sorted-map
       (interleave (map #(keyword (format "key%04d" %)) nums) nums))))
-  
+
 (defn write-description [file-name description vals]
   (println "##" description)
   (println "* Files:" (str file-name ".edn") (str file-name ".json") (str file-name ".mp"))
@@ -65,30 +66,30 @@
   (write-exemplar "one_keyword" "A single keyword" :hello)
   (write-exemplar "one_symbol" "A single symbol" 'hello)
   (write-exemplar "one_date" "A single date" (java.util.Date. 946728000000))
-  
+
   (def vector-simple  [1 2 3])
   (def vector-mixed  [0 1 2.0 true false "five" :six 'seven "~eight" nil])
   (def vector-nested [vector-simple vector-mixed])
-  
+
   (write-exemplar "vector_simple" "A simple vector" vector-simple)
   (write-exemplar "vector_empty" "An empty vector" [])
   (write-exemplar "vector_mixed" "A ten element vector with mixed values" vector-mixed)
   (write-exemplar "vector_nested" "Two vectors nested inside of an outter vector" vector-nested)
-  
+
   (def small-strings  ["" "a" "ab" "abc" "abcd" "abcde" "abcdef"])
-  
+
   (write-exemplar "small_strings" "A vector of small strings" small-strings)
-  
+
   (write-exemplar "strings_tilde" "A vector of strings starting with ~" (vmap #(str "~" %) small-strings))
 
   (write-exemplar "strings_hash" "A vector of strings starting with #" (vmap #(str "#" %) small-strings))
 
   (write-exemplar "strings_hat" "A vector of strings starting with ^" (vmap #(str "^" %) small-strings))
-  
+
   (write-exemplar "small_ints" "A vector of eleven small integers" (range-centered-on 0))
 
   (write-exemplar "ints", "vector of ints" (vec (range 128)))
-  
+
   (def powers-two
        [1 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384
         32768 65536 131072 262144 524288 1048576 2097152 4194304
@@ -105,29 +106,29 @@
         2305843009213693952 4611686018427387904 9223372036854775808
         18446744073709551616 36893488147419103232])
 
-  (def interesting-ints 
+  (def interesting-ints
     (vec (apply concat (map #(range-centered-on % 2) powers-two))))
-    
-  (write-exemplar 
+
+  (write-exemplar
     "ints_interesting"
     "A vector of possibly interesting positive integers"
     interesting-ints)
-    
-  (write-exemplar 
+
+  (write-exemplar
     "ints_interesting_neg"
     "A vector of possibly interesting negative integers"
     (vmap #(* -1 %) interesting-ints))
-    
+
   (write-exemplar
     "doubles_small"
     "A vector of eleven doubles from -5.0 to 5.0"
     (vmap #(double %) (range-centered-on 0)))
-  
+
   (write-exemplar
     "doubles_interesting"
     "A vector of interesting doubles"
     [-3.14159 3.14159 4E11 2.998E8 6.626E-34])
-  
+
   (def uuids [#uuid "5a2cbea3-e8c6-428b-b525-21239370dd55"
               #uuid "d1dc64fa-da79-444b-9fa4-d4412f427289"
               #uuid "501a978e-3a3e-4060-b3be-1cf2bd4b1a38"
@@ -139,7 +140,15 @@
     "uuids"
     "A vector of uuids"
     uuids)
-  
+
+  (def uris [(URI. "http://example.com")
+             (URI. "ftp://example.com")
+             (URI. "file:///path/to/file.txt")
+             (URI. "http://www.詹姆斯.com/")])
+
+  (write-exemplar "one_uri" "A single URI" (first uris))
+
+  (write-exemplar "uris" "A vector of URIs" uris)
 
   (def dates (vmap #(java.util.Date. %) [-6106017600000 0 946728000000 1396909037000]))
 
@@ -149,10 +158,10 @@
     dates)
 
   (def symbols ['a 'ab 'abc 'abcd 'abcde 'a1 'b2 'c3 'a_b])
-  
+
   (write-exemplar "symbols" "A vector of symbols" symbols)
   (write-exemplar "keywords" "A vector of keywords" (vmap keyword symbols))
-  
+
   (write-exemplar "list_simple" "A simple list" (apply list vector-simple))
   (write-exemplar "list_empty" "An empty list" '())
   (write-exemplar "list_mixed" "A ten element list with mixed values" (apply list vector-mixed))
@@ -164,12 +173,12 @@
   (write-exemplar "set_mixed" "A ten element set with mixed values" (set vector-mixed))
   (write-exemplar "set_mixed" "Two sets nested inside an outter set"
     (set [(set vector-simple) (set vector-mixed)]))
-  
+
 
   (def map-simple {:a 1 :b 2 :c 3})
   (def map-mixed {:a 1 :b "a string" :c true})
   (def map-nested {:simple map-simple, :mixed map-mixed})
-  
+
   (write-exemplar "map_simple" "A simple map" map-simple)
   (write-exemplar "map_mixed" "A mixed map" map-mixed)
   (write-exemplar "map_nested" "A nested map" map-nested)
@@ -177,43 +186,43 @@
   (write-exemplar "map_string_keys" "A map with string keys" {"first" 1, "second" 2, "third" 3})
 
   (write-exemplar "map_numeric_keys" "A map with numeric keys" {1 "one", 2 "two"})
- 
+
   (write-exemplar "map_vector_keys" "A map with vector keys" {[1 1] "one", [2 2] "two"})
-  
+
   (write-exemplar "map_10_items" "10 item map"  (map-of-size 10))
-  
+
   (doseq [i [10 90 91 92 93 94 95]]
-    (write-exemplar 
+    (write-exemplar
       (str "map_" i "_nested")
       (str "Map of two nested " i " item maps")
       {:f (map-of-size i) :s (map-of-size i)}))
-  
-  (write-exemplar 
+
+  (write-exemplar
     "maps_two_char_sym_keys"
     "Vector of maps with identical two char symbol keys"
     [{:aa 1 :bb 2} {:aa 3 :bb 4} {:aa 5 :bb 6}])
-  
-  (write-exemplar 
+
+  (write-exemplar
     "maps_three_char_sym_keys"
     "Vector of maps with identical three char symbol keys"
     [{:aaa 1 :bbb 2} {:aaa 3 :bbb 4} {:aaa 5 :bbb 6}])
-  
-  (write-exemplar 
+
+  (write-exemplar
     "maps_four_char_sym_keys"
     "Vector of maps with identical four char symbol keys"
     [{:aaaa 1 :bbbb 2} {:aaaa 3 :bbbb 4} {:aaaa 5 :bbbb 6}])
-  
-  (write-exemplar 
+
+  (write-exemplar
     "maps_two_char_string_keys"
     "Vector of maps with identical two char string keys"
     [{"aa" 1 "bb" 2} {"aa" 3 "bb" 4} {"aa" 5 "bb" 6}])
-  
-  (write-exemplar 
+
+  (write-exemplar
     "maps_three_char_string_keys"
     "Vector of maps with identical three char string keys"
     [{"aaa" 1 "bbb" 2} {"aaa" 3 "bbb" 4} {"aaa" 5 "bbb" 6}])
-  
-  (write-exemplar 
+
+  (write-exemplar
     "maps_four_char_string_keys"
     "Vector of maps with identical four char string keys"
     [{"aaaa" 1 "bbbb" 2} {"aaaa" 3 "bbbb" 4} {"aaaa" 5 "bbbb" 6}])
