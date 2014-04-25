@@ -59,7 +59,7 @@ Tests are currently limited to json.
 
 ### Test requirements
 
-Testing `transit-clj` requires Leiningen.
+Testing `transit-clj` requires Maven.
 
 Testing `transit-java` requires Maven.
 

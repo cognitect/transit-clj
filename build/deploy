@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -e
+
+bucket=mrep
+
+./build/package
+
+echo "Deploying"
+
+aws s3 cp --recursive ./target/package s3://${bucket}/release
+
+echo "Deploy done!"
