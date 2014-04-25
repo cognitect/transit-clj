@@ -6,6 +6,16 @@ A Clojure library designed to ... well, that part is up to you.
 
 FIXME
 
+## Deployment
+
+Running `build/package` will build transit-clj, install to the local
+maven reposistory, and prepare for deployment.
+
+Running `build/deploy` will run `build/package`, and push to the
+'datomic-maven' S3 bucket.  To deploy, you'll need the AWS CLI tools
+installed and configured with permissions to access this bucket (see
+https://aws.amazon.com/cli/).
+
 ## Testing Tansit implementations
 
 This project contains code which may be used to test all
