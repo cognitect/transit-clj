@@ -270,12 +270,10 @@
   (println (format "testing %s's %s encoding"
                    project
                    (name encoding)))
-  (if (= encoding :msgpack)
-    (println "msgpack tests are disabled until we have a working implementation.")
-    (let [command (str "../" project "/bin/roundtrip")]
-      (report (-> (verify-impl-encoding command encoding opts)
-                  (assoc :project project))
-              opts))))
+  (let [command (str "../" project "/bin/roundtrip")]
+    (report (-> (verify-impl-encoding command encoding opts)
+                (assoc :project project))
+            opts)))
 
   (defn verify-impl
   "Given a project name like 'transit-java', 'transit-clj' or
