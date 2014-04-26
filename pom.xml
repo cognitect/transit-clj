@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>transit-clj</groupId>
   <artifactId>transit-clj</artifactId>
-  <packaging>clojure</packaging>
+<!--  <packaging>clojure</packaging> -->
   <version>dev</version>
   <name>transit-clj</name>
   <description>FIXME: write description</description>
@@ -21,6 +21,9 @@
       <resource>
         <directory>resources</directory>
       </resource>
+      <resource>
+        <directory>src</directory>
+      </resource>
     </resources>
     <testResources>
       <testResource>
@@ -33,6 +36,7 @@
     <directory>target</directory>
     <outputDirectory>target/classes</outputDirectory>
     <plugins>
+<!--
       <plugin>
         <groupId>com.theoryinpractise</groupId>
         <artifactId>clojure-maven-plugin</artifactId>
@@ -50,6 +54,7 @@
           </testSourceDirectories>
         </configuration>
       </plugin>
+-->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>versions-maven-plugin</artifactId>
@@ -87,11 +92,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.clojure</groupId>
-      <artifactId>data.fressian</artifactId>
-      <version>0.2.0</version>
-    </dependency>
-    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
       <version>2.3.1</version>
@@ -105,6 +105,12 @@
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
       <version>1.5</version>
+    </dependency>
+    <dependency>
+      <groupId>org.clojure</groupId>
+      <artifactId>data.fressian</artifactId>
+      <version>0.2.0</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
