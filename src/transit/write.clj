@@ -80,6 +80,9 @@
     (str ns "/" (.getName kw-or-sym))
     (.getName kw-or-sym)))
 
+(defprotocol Flushable
+  (flush-stream [stm]))
+
 (defprotocol Emitter
   (emit-nil [em as-map-key cache])
   (emit-string [em prefix tag s as-map-key cache])
@@ -94,7 +97,7 @@
   (emit-map-start [em size])
   (emit-map-end [em])
   (emit-quoted [em o cache])
-  (flush-writer [em])
+  (flush-writer [em stm])
   (prefers-strings [em]))
 
 (def JSON_INT_MAX (Math/pow 2 53))
@@ -144,7 +147,7 @@
     (emit-string jg ESC_TAG "'" nil true cache)
     (marshal jg o false cache)
     (emit-map-end jg))
-  (flush-writer [^JsonGenerator jg] (.flush jg))
+  (flush-writer [^JsonGenerator jg _] (.flush jg))
   (prefers-strings [_] true))
 
 (def MSGPACK_INT_MAX (Math/pow 2 64))
@@ -180,7 +183,9 @@
   (emit-map-end [^Packer p] (.writeMapEnd p))
   (emit-quoted [^Packer p o cache]
     (marshal p o false cache))
-  (flush-writer [^Packer p] (.flush p))
+  (flush-writer [^Packer p ^OutputStream s]
+    (.flush p)
+    (flush-stream s))
   (prefers-strings [_] false))
 
 (defn emit-ints
@@ -554,7 +559,7 @@
         (set! *handlers* (assoc *handlers* t h))
         h))))
 
-(deftype Writer [marshaler opts])
+(deftype Writer [marshaler stm opts])
 
 (defprotocol Writerable
   (make-writer [_ type opts]))
@@ -566,6 +571,7 @@
      (case type
        :json (.createGenerator (JsonFactory.) stm)
        :msgpack (.createPacker (MessagePack.) stm))
+     stm
      opts))
   java.io.Writer
   (make-writer [^java.io.Writer w type opts]
@@ -573,7 +579,13 @@
      (case type
        :json (.createGenerator (JsonFactory.) w)
        :msgpack (throw (ex-info "Cannot create :msgpack writer on top of java.io.Writer, must use java.io.OutputStream" {})))
+     nil
      opts)))
+
+(extend-protocol Flushable
+  OutputStream
+  (flush-stream [stm]
+    (.flush stm)))
 
 (defn writer
   ([o type] (writer o type {}))
@@ -588,7 +600,7 @@
     (binding [*handlers* (merge default-handlers handlers)]
       (marshal-top m o (write-cache)))
     ;; can we configure JsonGenerator to automatically flush writes?
-    (flush-writer m)))
+    (flush-writer m (.stm writer))))
 
 (defn make-handler
   [tag-fn rep-fn str-rep-fn]
