@@ -88,8 +88,6 @@
   attempting to destroy the process."
   [proc]
   (try
-    (.write (:out proc) 3) ;; send Ctrl+C
-    (.flush (:out proc))
     (.destroy (:p proc))
     (catch Throwable e
       (println "WARNING! Exception while stopping process.")
