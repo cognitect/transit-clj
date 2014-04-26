@@ -116,9 +116,16 @@
 
 (defn equalize [data]
   (walk/prewalk (fn [node]
-                  (if (instance? java.math.BigDecimal node)
-                    (.stripTrailingZeros node)
-                    node))
+                  (cond (instance? java.math.BigDecimal node)
+                        (.stripTrailingZeros node)
+                        (instance? java.util.Map$Entry node)
+                        node
+                        (sequential? node)
+                        (seq node)
+                        (instance? Character node)
+                        (str node)
+                        :else
+                        node))
                 data))
 
 (defn roundtrip-transit
@@ -140,8 +147,7 @@
          :data-actual data-in
          :nano-time (- end start)
          ;; only checks the top level type
-         :status (if (and (= (type data-out) (type data-in))
-                          (= (equalize data-out) (equalize data-in)))
+         :status (if (= (equalize data-out) (equalize data-in))
                    :success
                    :error)}))))
 
