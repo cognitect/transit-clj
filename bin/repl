@@ -1,1 +1,3 @@
-java -server -Xms1g -Xmx1g -cp `lein classpath` clojure.main -r
+#!/bin/sh
+
+java -server -Xms1g -Xmx1g -cp `bin/classpath` clojure.main -r

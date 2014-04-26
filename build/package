@@ -5,19 +5,18 @@ set -e
 echo "Cleaning..."
 rm -rf ./target
 
-echo "Packaging..."
-lein compile
-lein install
+echo "Calculating version..."
+prefix=`cat VERSION_PREFIX`
+suffix=`build/revision`
+version=$prefix.$suffix
+echo $version
 
-version=`build/version`
 target_name=transit-clj-${version}
-target_path=./target/${target_name}
 
-cp pom.xml ${target_path}.pom
+echo "Packaging..."
+mvn versions:set -DnewVersion=${version}
+mvn install -DcreateChecksum=true
+mvn install:install-file -Dfile=./target/${target_name}.jar -DpomFile=pom.xml -DcreateChecksum=true -DlocalRepositoryPath=./target/package
+mvn versions:revert
 
-#echo "Copying LICENSE, README and CHANGES..."
-#cp KIT_README.md ${target_path}/README-CONSOLE.md
-#cp LICENSE ${target_path}/LICENSE
-#cp CHANGES.md ${target_path}/CHANGES.md
-
-echo "Done!"
+echo "Package done!"

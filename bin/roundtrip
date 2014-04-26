@@ -2,4 +2,4 @@
 
 cd `dirname $0`/..
 
-exec java -cp `lein classpath` clojure.main -m transit.test-roundtrip "$@"
+exec java -server -Xms1g -Xmx1g -cp `bin/classpath`:`pwd`/test clojure.main -m transit.test-roundtrip "$@"

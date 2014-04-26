@@ -14,4 +14,4 @@ if [ -z "$ARGS" ] || [[ $ARGS == *ruby* ]]; then
   bin/get-transit-ruby
 fi
 
-exec lein run -m transit.verify "$@"
+exec java -server -Xms1g -Xmx1g -cp `bin/classpath`:`pwd`/test clojure.main -m transit.verify "$@"
