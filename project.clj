@@ -1,4 +1,4 @@
-(defproject transit-clj (clojure.string/trimr (:out (clojure.java.shell/sh "build/version")))
+(defproject transit-clj (clojure.string/trimr (:out (clojure.java.shell/sh "build/revision")))
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
@@ -9,5 +9,3 @@
                  [commons-codec "1.5"]]
   :profiles {:provided {:dependencies [[org.clojure/clojure "1.5.1"]]}
              :dev {:dependencies [[org.clojure/data.generators "0.1.2"]]}})
-
-
