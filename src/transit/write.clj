@@ -150,7 +150,7 @@
   (flush-writer [^JsonGenerator jg _] (.flush jg))
   (prefers-strings [_] true))
 
-(def MSGPACK_INT_MAX (Math/pow 2 64))
+(def MSGPACK_INT_MAX (Math/pow 2 63))
 (def MSGPACK_INT_MIN (- 0 MSGPACK_INT_MAX))
 
 (extend-protocol Emitter
@@ -164,11 +164,13 @@
   (emit-boolean [^Packer p b as-map-key cache] (.write p b))
 
   (emit-integer [^Packer p i as-map-key cache]
-    ;; using Long MAX and MIN because i is passed to write as long
-    ;; should be able to use MSGPACK_INT_MAX/MIN - ???
-    (if (or (string? i) (> i Long/MAX_VALUE) (< i Long/MIN_VALUE))
+    (if (or (string? i) (> i MSGPACK_INT_MIN) (< i MSGPACK_INT_MAX))
       (emit-string p ESC "i" i as-map-key cache)
-      (.write p ^long i)))
+      (if (instance? clojure.lang.BigInt i)
+        (.write p ^BigInteger (biginteger i))
+        (if (instance? BigInteger i)
+          (.write p ^BigInteger i)
+          (.write p (long i))))))
 
   (emit-double [^Packer p d as-map-key cache] (.write p ^double d))
 
