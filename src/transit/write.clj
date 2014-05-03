@@ -150,7 +150,7 @@
   (flush-writer [^JsonGenerator jg _] (.flush jg))
   (prefers-strings [_] true))
 
-(def MSGPACK_INT_MAX (Math/pow 2 63))
+(def MSGPACK_INT_MAX (bigint (Math/pow 2 63)))
 (def MSGPACK_INT_MIN (- 0 MSGPACK_INT_MAX))
 
 (extend-protocol Emitter
@@ -164,7 +164,7 @@
   (emit-boolean [^Packer p b as-map-key cache] (.write p b))
 
   (emit-integer [^Packer p i as-map-key cache]
-    (if (or (string? i) (> i MSGPACK_INT_MIN) (< i MSGPACK_INT_MAX))
+    (if (or (string? i) (> i MSGPACK_INT_MAX) (< i MSGPACK_INT_MIN))
       (emit-string p ESC "i" i as-map-key cache)
       (if (instance? clojure.lang.BigInt i)
         (.write p ^BigInteger (biginteger i))
