@@ -128,12 +128,12 @@
       (emit-string jg ESC "i" i as-map-key cache)
       (.writeNumber jg ^long i)))
 
-  (emit-double [^JsonGeneragor jg d as-map-key cache]
+  (emit-double [^JsonGenerator jg d as-map-key cache]
     (if as-map-key
       (emit-string jg ESC "d" d as-map-key cache)
       (.writeNumber jg ^double d)))
 
-  (emit-binary [^JsonGeneragor jg b as-map-key cache]
+  (emit-binary [^JsonGenerator jg b as-map-key cache]
     (emit-string jg ESC "b" (Base64/encodeBase64String b) as-map-key cache))
 
   (array-size [^JsonGenerator jg _] nil)
