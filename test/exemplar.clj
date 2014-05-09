@@ -22,7 +22,7 @@
 (defn vector-of-keywords
   [n m]
   "Return a m length vector consisting of cycles of n keywordss"
-  (vmap #(keyword (format "key%05d" %)) (take m (cycle (range n)))))
+  (vmap #(keyword (format "key%04d" %)) (take m (cycle (range n)))))
 
 (defn map-of-size [n]
   (let [nums (range 0 n)]
@@ -165,13 +165,13 @@
   (write-exemplar "list_simple" "A simple list" (apply list vector-simple))
   (write-exemplar "list_empty" "An empty list" '())
   (write-exemplar "list_mixed" "A ten element list with mixed values" (apply list vector-mixed))
-  (write-exemplar "list_mixed" "Two lists nested inside an outter list"
+  (write-exemplar "list_nested" "Two lists nested inside an outter list"
     (list (apply list vector-simple) (apply list vector-mixed)))
 
   (write-exemplar "set_simple" "A simple set" (set vector-simple))
   (write-exemplar "set_empty" "An empty set" #{})
   (write-exemplar "set_mixed" "A ten element set with mixed values" (set vector-mixed))
-  (write-exemplar "set_mixed" "Two sets nested inside an outter set"
+  (write-exemplar "set_nested" "Two sets nested inside an outter set"
     (set [(set vector-simple) (set vector-mixed)]))
 
 

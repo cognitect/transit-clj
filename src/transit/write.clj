@@ -128,12 +128,12 @@
       (emit-string jg ESC "i" i as-map-key cache)
       (.writeNumber jg ^long i)))
 
-  (emit-double [^JsonGeneragor jg d as-map-key cache]
+  (emit-double [^JsonGenerator jg d as-map-key cache]
     (if as-map-key
       (emit-string jg ESC "d" d as-map-key cache)
       (.writeNumber jg ^double d)))
 
-  (emit-binary [^JsonGeneragor jg b as-map-key cache]
+  (emit-binary [^JsonGenerator jg b as-map-key cache]
     (emit-string jg ESC "b" (Base64/encodeBase64String b) as-map-key cache))
 
   (array-size [^JsonGenerator jg _] nil)
@@ -150,7 +150,7 @@
   (flush-writer [^JsonGenerator jg _] (.flush jg))
   (prefers-strings [_] true))
 
-(def MSGPACK_INT_MAX (Math/pow 2 64))
+(def MSGPACK_INT_MAX (bigint (Math/pow 2 63)))
 (def MSGPACK_INT_MIN (- 0 MSGPACK_INT_MAX))
 
 (extend-protocol Emitter
@@ -164,11 +164,13 @@
   (emit-boolean [^Packer p b as-map-key cache] (.write p b))
 
   (emit-integer [^Packer p i as-map-key cache]
-    ;; using Long MAX and MIN because i is passed to write as long
-    ;; should be able to use MSGPACK_INT_MAX/MIN - ???
-    (if (or (string? i) (> i Long/MAX_VALUE) (< i Long/MIN_VALUE))
+    (if (or (string? i) (> i MSGPACK_INT_MAX) (< i MSGPACK_INT_MIN))
       (emit-string p ESC "i" i as-map-key cache)
-      (.write p ^long i)))
+      (if (instance? clojure.lang.BigInt i)
+        (.write p ^BigInteger (biginteger i))
+        (if (instance? BigInteger i)
+          (.write p ^BigInteger i)
+          (.write p (long i))))))
 
   (emit-double [^Packer p d as-map-key cache] (.write p ^double d))
 
