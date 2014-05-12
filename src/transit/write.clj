@@ -2,7 +2,8 @@
 ;; All rights reserved.
 
 (ns transit.write
-  (:import [com.cognitect.transit Handler]
+  (:require [clojure.string :as str])
+  (:import [com.cognitect.transit Handler TransitFactory TransitFactory$Format]
            [java.io InputStream OutputStream EOFException OutputStreamWriter]))
 
 (set! *warn-on-reflection* true)
@@ -25,7 +26,7 @@
  java.util.List
  (reify Handler
    (tag [_ l] (if (seq? l) "list" "array"))
-   (rep [_ l] (if (seq? l) (com.cognitect.transit.impl.TaggedValue "array" l ) l))
+   (rep [_ l] (if (seq? l) (TransitFactory/taggedValue "array" l ) l))
    (stringRep [_ _] nil))
 
  clojure.lang.BigInt
@@ -43,7 +44,7 @@
  clojure.lang.Ratio
  (reify Handler
    (tag [_ _] "ratio")
-   (rep [_ r] (com.cognitect.transit.impl.TaggedValue. "array" [(numerator r) (denominator r)]))
+   (rep [_ r] (TransitFactory/taggedValue "array" [(numerator r) (denominator r)]))
    (stringRep [_ _] nil))
 
  clojure.lang.Symbol
@@ -55,22 +56,19 @@
 
 (deftype Writer [w])
 
-(defn transit-type
-  [type]
-  (case type
-    :json com.cognitect.transit.Writer$Format/JSON
-    :msgpack com.cognitect.transit.Writer$Format/MSGPACK))
-
 (defn writer
   ([out type] (writer out type {}))
   ([^OutputStream out type opts]
      (if (#{:json :msgpack} type)
        (let [handlers (merge default-handlers (:handlers opts))]
-         (Writer. (com.cognitect.transit.Writer/instance (transit-type type)
-                                                         out
-                                                         handlers)))
+         (Writer. (TransitFactory/writer (-> type
+                                             name
+                                             str/upper-case
+                                             TransitFactory$Format/valueOf)
+                                         out
+                                         handlers)))
        (throw (ex-info "Type must be :json or :msgpack" {:type type})))))
 
-(defn write [^Writer writer o] (.write ^com.cognitect.transit.IWriter (.w writer) o))
+(defn write [^Writer writer o] (.write ^com.cognitect.transit.Writer (.w writer) o))
 
 

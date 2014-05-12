@@ -3,8 +3,8 @@
 
 (ns transit.read
   (:refer-clojure :exclude [read])
-  (:require [transit.write :as w])
-  (:import [com.cognitect.transit Decoder]
+  (:require [clojure.string :as str])
+  (:import [com.cognitect.transit Decoder TransitFactory TransitFactory$Format]
            [java.io InputStream]))
 
 (set! *warn-on-reflection* true)
@@ -30,22 +30,19 @@
 
 (deftype Reader [r])
 
-(defn transit-type
-  [type]
-  (case type
-    :json com.cognitect.transit.Reader$Format/JSON
-    :msgpack com.cognitect.transit.Reader$Format/MSGPACK))
-
 (defn reader
   ([in type] (reader in type {}))
   ([^InputStream in type opts]
      (if (#{:json :msgpack} type)
        (let [decoders (merge default-decoders (:decoders opts))]
-         (Reader. (com.cognitect.transit.Reader/instance (transit-type type)
-                                                         in
-                                                         decoders)))
+         (Reader. (TransitFactory/reader (-> type
+                                             name
+                                             str/upper-case
+                                             TransitFactory$Format/valueOf)
+                                         in
+                                         decoders)))
        (throw (ex-info "Type must be :json or :msgpack" {:type type})))))
 
 
-(defn read [^Reader reader] (.read ^com.cognitect.transit.IReader (.r reader)))
+(defn read [^Reader reader] (.read ^com.cognitect.transit.Reader (.r reader)))
 
