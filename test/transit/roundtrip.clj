@@ -2,8 +2,7 @@
 ;; All rights reserved.
 
 (ns transit.roundtrip
-  (:require [transit.read :as r]
-            [transit.write :as w]
+  (:require [transit :as t]
             [transit.generators :as gen]
             [clojure.edn :as edn]
             [clojure.data.fressian :as f])
@@ -43,8 +42,8 @@
   [type]
   (fn [form]
     (let [out (ByteArrayOutputStream. 10000)
-          w (w/writer out type)]
-      (w/write w form)
+          w (t/writer out type)]
+      (t/write w form)
       (.toByteArray out))))
 
 (def transit-js-writer (transit-writer :json))
@@ -53,8 +52,8 @@
 (defn transit-reader
   [type]
   (fn [bytes]
-    (let [r (r/reader (ByteArrayInputStream. bytes) type)]
-      (r/read r))))
+    (let [r (t/reader (ByteArrayInputStream. bytes) type)]
+      (t/read r))))
 
 (def transit-js-reader (transit-reader :json))
 (def transit-mp-reader (transit-reader :msgpack))

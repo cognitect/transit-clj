@@ -2,8 +2,7 @@
 ;; All rights reserved.
 
 (ns exemplar
-  (:require [transit.read :as r]
-            [transit.write :as w]
+  (:require [transit :as t]
             [clojure.java.io :as io])
   (:import [java.net URI]))
 
@@ -41,8 +40,8 @@
 (defn write-transit [file-name & vals]
   (doseq [format [{:type :json, :suffix ".json"} {:type :msgpack :suffix ".mp"}]]
     (with-open [os (io/output-stream (str file-name (:suffix format)))]
-      (let [jsw (w/writer os (:type format))]
-        (doseq [item vals] (w/write jsw item))))))
+      (let [jsw (t/writer os (:type format))]
+        (doseq [item vals] (t/write jsw item))))))
 
 (defn write-exemplar [file-name description & vals]
   (write-description file-name description vals)
@@ -230,8 +229,8 @@
   (write-exemplar
     "maps_unrecognized_keys"
     "Vector of maps with keys with unrecognized encodings"
-    [(w/tagged-value "abcde" :anything)
-     (w/tagged-value "fghij" :anything-else)])
+    [(t/tagged-value "abcde" :anything)
+     (t/tagged-value "fghij" :anything-else)])
 
   (write-exemplar
     "map_unrecognized_vals"

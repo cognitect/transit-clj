@@ -15,8 +15,7 @@
   generative testing and collect timing information."
   (:require [clojure.java.io :as io]
             [clojure.walk :as walk]
-            [transit.read :as r]
-            [transit.write :as w]
+            [transit :as t]
             [transit.generators :as gen]
             [transit.corner-cases :as cc]
             [clojure.pprint :as pp])
@@ -63,8 +62,8 @@
   encoded value of the object."
   [o encoding]
   (let [out (ByteArrayOutputStream.)
-        w (w/writer out encoding)]
-    (w/write w o)
+        w (t/writer out encoding)]
+    (t/write w o)
     (.toByteArray out)))
 
 (defn read-transit
@@ -73,8 +72,8 @@
   [bytes encoding]
   (try
     (let [in (ByteArrayInputStream. bytes)
-          r (r/reader in encoding)]
-      (r/read r))
+          r (t/reader in encoding)]
+      (t/read r))
     (catch Throwable e
       ::read-error)))
 
@@ -89,9 +88,9 @@
   (let [p (.start (ProcessBuilder. [command (name encoding)]))
         out (BufferedOutputStream. (.getOutputStream p))
         in (BufferedInputStream. (.getInputStream p))]
-    ;; for JSON, r/reader does not return until data starts to flow
+    ;; for JSON, t/reader does not return until data starts to flow
     ;; over input stream
-    {:out out :p p :reader (future (r/reader in encoding))}))
+    {:out out :p p :reader (future (t/reader in encoding))}))
 
 (defn stop-process
   "Given a process, stop the process started by
@@ -119,7 +118,7 @@
   "Given a process and a timeout in milliseconds, attempt to read
   a transit value.  If the read times out, returns `::timeout`.`"
   [proc timeout-ms]
-  (let [f (future (r/read @(:reader proc)))
+  (let [f (future (t/read @(:reader proc)))
         result (try
                  (deref f timeout-ms ::timeout)
                  (catch Throwable e
