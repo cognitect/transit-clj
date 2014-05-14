@@ -14,4 +14,8 @@ if [ -z "$ARGS" ] || [[ $ARGS == *ruby* ]]; then
   bin/get-transit-ruby
 fi
 
+if [ -z "$ARGS" ] || [[ $ARGS == *js* ]]; then
+  bin/get-transit-js
+fi
+
 exec java -server -Xms1g -Xmx1g -cp `bin/classpath`:`pwd`/test clojure.main -m transit.verify "$@"
