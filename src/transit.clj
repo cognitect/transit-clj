@@ -4,7 +4,9 @@
 (ns transit
   (:refer-clojure :exclude [read])
   (:require [clojure.string :as str])
-  (:import [com.cognitect.transit Handler Decoder TransitFactory TransitFactory$Format]
+  (:import [com.cognitect.transit Handler Decoder
+            TransitFactory TransitFactory$Format
+            MapBuilder ListBuilder ArrayBuilder SetBuilder]
            [java.io InputStream OutputStream]))
 
 ;; writing
@@ -35,38 +37,39 @@
     (rep [_ o] (rep-fn o))
     (stringRep [_ o] (str-rep-fn o))))
 
-(def default-handlers
-{
- java.util.List
- (reify Handler
-   (tag [_ l] (if (seq? l) "list" "array"))
-   (rep [_ l] (if (seq? l) (TransitFactory/taggedValue "array" l ) l))
-   (stringRep [_ _] nil))
+(defn default-handlers
+  []
+  {
+   java.util.List
+   (reify Handler
+     (tag [_ l] (if (seq? l) "list" "array"))
+     (rep [_ l] (if (seq? l) (TransitFactory/taggedValue "array" l ) l))
+     (stringRep [_ _] nil))
 
- clojure.lang.BigInt
- (reify Handler
-   (tag [_ _] "i")
-   (rep [_ bi] (biginteger bi))
-   (stringRep [_ bi] (str bi)))
+   clojure.lang.BigInt
+   (reify Handler
+     (tag [_ _] "i")
+     (rep [_ bi] (biginteger bi))
+     (stringRep [_ bi] (str bi)))
 
- clojure.lang.Keyword
- (reify Handler
-   (tag [_ _] ":")
-   (rep [_ kw] (nsed-name kw))
-   (stringRep [_ kw] (nsed-name kw)))
+   clojure.lang.Keyword
+   (reify Handler
+     (tag [_ _] ":")
+     (rep [_ kw] (nsed-name kw))
+     (stringRep [_ kw] (nsed-name kw)))
 
- clojure.lang.Ratio
- (reify Handler
-   (tag [_ _] "ratio")
-   (rep [_ r] (TransitFactory/taggedValue "array" [(numerator r) (denominator r)]))
-   (stringRep [_ _] nil))
+   clojure.lang.Ratio
+   (reify Handler
+     (tag [_ _] "ratio")
+     (rep [_ r] (TransitFactory/taggedValue "array" [(numerator r) (denominator r)]))
+     (stringRep [_ _] nil))
 
- clojure.lang.Symbol
- (reify Handler
-   (tag [_ _] "$")
-   (rep [_ sym] (nsed-name sym))
-   (stringRep [_ sym] (nsed-name sym)))
- })
+   clojure.lang.Symbol
+   (reify Handler
+     (tag [_ _] "$")
+     (rep [_ sym] (nsed-name sym))
+     (stringRep [_ sym] (nsed-name sym)))
+   })
 
 (deftype Writer [w])
 
@@ -74,7 +77,7 @@
   ([out type] (writer out type {}))
   ([^OutputStream out type opts]
      (if (#{:json :msgpack} type)
-       (let [handlers (merge default-handlers (:handlers opts))]
+       (let [handlers (merge (default-handlers) (:handlers opts))]
          (Writer. (TransitFactory/writer (transit-format type) out handlers)))
        (throw (ex-info "Type must be :json or :msgpack" {:type type})))))
 
@@ -88,7 +91,8 @@
   (reify Decoder
     (decode [_ o] (decode-fn o))))
 
-(def default-decoders
+(defn default-decoders
+  []
   {":" 
    (reify Decoder
      (decode [_ o] (keyword o)))
@@ -102,21 +106,61 @@
      (decode [_ o] (/ (.get ^java.util.List o 0)
                       (.get ^java.util.List o 1))))})
 
+(defn map-builder
+  []
+  (reify MapBuilder
+    (init [_] (transient {}))
+    (init [_ ^int size] (transient {}))
+    (add [_ mb k v] (assoc! mb k v))
+    (^java.util.Map map [_ mb] (persistent! mb))))
+
+(defn list-builder
+  []
+  (reify ListBuilder
+    (init [_] (list))
+    (init [_ ^int size] (list))
+    (add [_ lb item] (conj lb item))
+    (^java.util.List list [_ lb] lb)))
+
+(defn set-builder
+  []
+  (reify SetBuilder
+    (init [_] (transient #{}))
+    (init [_ ^int size] (transient #{}))
+    (add [_ sb item] (conj! sb item))
+    (^java.util.Set set [_ sb] (persistent! sb))))
+
+(defn array-builder
+  []
+  (reify ArrayBuilder
+    (init [_] (transient []))
+    (init [_ ^int size] (transient []))
+    (add [_ ab item] (conj! ab item))
+    (^java.util.List array [_ ab] (persistent! ab))))
+
 (deftype Reader [r])
 
 (defn reader
   ([in type] (reader in type {}))
   ([^InputStream in type opts]
      (if (#{:json :msgpack} type)
-       (let [decoders (merge default-decoders (:decoders opts))]
-         (Reader. (TransitFactory/reader (transit-format type) in decoders)))
+       (let [decoders (merge (default-decoders) (:decoders opts))]
+         (Reader. (TransitFactory/reader (transit-format type)
+                                         in
+                                         decoders
+                                         (map-builder)
+                                         (list-builder)
+                                         (array-builder)
+                                         (set-builder))))
        (throw (ex-info "Type must be :json or :msgpack" {:type type})))))
 
 (defn read [^Reader reader] (.read ^com.cognitect.transit.Reader (.r reader)))
 
 
-
 (comment
+
+  (require 'transit)
+  (in-ns 'transit)
 
   (import [java.io File ByteArrayInputStream ByteArrayOutputStream OutputStreamWriter])
 
@@ -143,6 +187,7 @@
 
   (def r (reader in :msgpack))
 
+  (type (read r))
   (read r)
 
   ;; extensibility
