@@ -93,7 +93,7 @@
 
 (defn default-decoders
   []
-  {":" 
+  {":"
    (reify Decoder
      (decode [_ o] (keyword o)))
 
@@ -117,10 +117,13 @@
 (defn list-builder
   []
   (reify ListBuilder
-    (init [_] (list))
-    (init [_ ^int size] (list))
-    (add [_ lb item] (conj lb item))
-    (^java.util.List list [_ lb] lb)))
+    (init [_] (java.util.ArrayList.))
+    (init [_ ^int size] (java.util.ArrayList. size))
+    (add [_ lb item] (.add ^java.util.List lb item) lb)
+    (^java.util.List list [_ lb]
+      (or (seq lb) '())
+      #_(apply list lb)
+      )))
 
 (defn set-builder
   []
