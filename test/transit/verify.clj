@@ -129,7 +129,9 @@
 
 (defn equalize [data]
   (walk/prewalk (fn [node]
-                  (cond (instance? java.math.BigDecimal node)
+                  (cond (instance? java.lang.Long node)
+                        (.doubleValue node)
+                        (instance? java.math.BigDecimal node)
                         (.stripTrailingZeros node)
                         (instance? java.util.Map$Entry node)
                         node
