@@ -235,27 +235,27 @@
             [{:pred (constantly true)
               :desc "exemplar file"
               :input transit-exemplars
-              :path [:tests :exemplar-file]
+              :test-name :exemplar-file
               :test #(test-each proc %)}
              {:pred (constantly true)
               :desc "EDN corner case"
               :input (mapv #(edn->test-input % encoding) cc/forms)
-              :path [:tests :corner-case-edn]
+              :test-name :corner-case-edn
               :test #(test-each proc %)}
              {:pred (fn [_ e _] (= e :json))
               :desc "JSON transit corner case"
               :input (mapv #(transit->test-input (.getBytes %) encoding) cc/transit-json)
-              :path [:tests :corner-case-transit-json]
+              :test-name :corner-case-transit-json
               :test #(test-each proc %)}
              {:pred (fn [_ _ o] (:gen o))
               :desc "generated EDN"
               :input (mapv #(edn->test-input % encoding) (:generated-forms opts))
-              :path [:tests :generated-edn]
+              :test-name :generated-edn
               :test #(test-each proc %)}
              {:pred (fn [_ _ o] (:time o))
               :desc "timing"
               :input transit-exemplars
-              :path [:time]
+              :test-name :time
               :test #(let [ms (test-timing proc %)]
                        {:ms ms
                         :count (count transit-exemplars)
@@ -275,14 +275,16 @@
           (str "encoding must be on of" (keys extension)))
   (let [proc (start-process command encoding)
         results {:command command
-                 :encoding encoding}]
+                 :encoding encoding
+                 :tests []}]
     (try
       (let [tests (filter-tests proc encoding opts)
-            results (reduce (fn [r {:keys [path test desc input]}]
+            results (reduce (fn [r {:keys [test-name test desc input]}]
                               (println (format "running \"%s\" test for %s encoding..."
                                                desc
                                                (name encoding)))
-                              (assoc-in r path (test input)))
+                              (update-in r [:tests] conj
+                                         {:test-name test-name :result (test input)}))
                             results
                             tests)]
         (stop-process proc)
@@ -390,21 +392,22 @@
     (println "     bytes:  " (-> error :data :hex))
     (println "     string: " (pr-str (:transit-string error)))
     (println "Expected:    " (pr-str (:data-expected error)))
-    (println (with-style :red "Actual:      " (pr-str (:data-actual error))))))
+    (println (with-style :red "Actual:      " (pr-str (:data-actual error))))
+    (println (with-style :red "--------------------"))))
 
 (defmethod print-report :default [type results]
   (pp/pprint results))
 
-(defn report [{:keys [project command encoding time tests] :as results}]
+(defn report [{:keys [project command encoding tests] :as results}]
   (println (with-style :bright "Project: " project "/" (name encoding)))
   (println "Command: " command)
-  (when time
-    (println (with-style :bright
-               (format "Time: %s ms to roundtrip %s %s exemplar files"
-                       (:ms time)
-                       (:count time)
-                       (name (:encoding time))))))
-  (doseq [[k v] tests]
-    (println "Results for test:" (name k))
-    (doseq [[type results] (group-by :status v)]
-      (print-report type results))))
+  (doseq [{:keys [test-name result]} tests]
+    (if (= test-name :time)
+      (println (with-style :bright
+                 (format "Time: %s ms to roundtrip %s %s exemplar files"
+                         (:ms result)
+                         (:count result)
+                         (name (:encoding result)))))
+      (do (println "Results for test:" (name test-name))
+          (doseq [[type result-seq] (group-by :status result)]
+            (print-report type result-seq))))))
