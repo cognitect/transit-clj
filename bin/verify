@@ -18,4 +18,8 @@ if [ -z "$ARGS" ] || [[ $ARGS == *js* ]]; then
   bin/get-transit-js
 fi
 
+if [ -z "$ARGS" ] || [[ $ARGS == *cljs* ]]; then
+  bin/get-transit-cljs
+fi
+
 exec java -server -Xms1g -Xmx1g -cp `bin/classpath`:`pwd`/test clojure.main -m transit.verify "$@"
