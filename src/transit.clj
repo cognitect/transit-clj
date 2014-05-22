@@ -78,7 +78,7 @@
   ([^OutputStream out type opts]
      (if (#{:json :msgpack} type)
        (let [handlers (merge (default-handlers) (:handlers opts))]
-         (Writer. (TransitFactory/writer (transit-format type) out handlers)))
+         (Writer. (TransitFactory/writer (transit-format type) out handlers (get opts :cache true))))
        (throw (ex-info "Type must be :json or :msgpack" {:type type})))))
 
 (defn write [^Writer writer o] (.write ^com.cognitect.transit.Writer (.w writer) o))
@@ -93,7 +93,7 @@
 
 (defn default-decoders
   []
-  {":" 
+  {":"
    (reify Decoder
      (decode [_ o] (keyword o)))
 
@@ -117,10 +117,13 @@
 (defn list-builder
   []
   (reify ListBuilder
-    (init [_] (list))
-    (init [_ ^int size] (list))
-    (add [_ lb item] (conj lb item))
-    (^java.util.List list [_ lb] lb)))
+    (init [_] (java.util.ArrayList.))
+    (init [_ ^int size] (java.util.ArrayList. size))
+    (add [_ lb item] (.add ^java.util.List lb item) lb)
+    (^java.util.List list [_ lb]
+      (or (seq lb) '())
+      #_(apply list lb)
+      )))
 
 (defn set-builder
   []
@@ -167,6 +170,7 @@
   (def out (ByteArrayOutputStream. 2000))
 
   (def w (writer out :json))
+  (def w (writer out :json {:cache false}))
 
   (def w (writer out :msgpack))
 
@@ -187,8 +191,8 @@
 
   (def r (reader in :msgpack))
 
-  (type (read r))
   (read r)
+  (type (read r))
 
   ;; extensibility
 
