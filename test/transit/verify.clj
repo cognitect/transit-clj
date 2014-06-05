@@ -21,7 +21,8 @@
             [clojure.pprint :as pp])
   (:import [java.io ByteArrayOutputStream ByteArrayInputStream
             BufferedInputStream BufferedOutputStream FileInputStream]
-           [org.apache.commons.codec.binary Hex]))
+           [org.apache.commons.codec.binary Hex]
+           [java.util Calendar TimeZone]))
 
 (def ^:dynamic *style* false)
 
@@ -75,6 +76,11 @@
           r (t/reader in encoding)]
       (t/read r))
     (catch Throwable e
+      (println ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" encoding)
+      (println (.getMessage e))
+      (.printStackTrace e)
+      (println (String. bytes))
+      (println ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
       ::read-error)))
 
 (defn start-process
@@ -129,16 +135,11 @@
 
 (defn equalize [data]
   (walk/prewalk (fn [node]
-                  (cond (instance? java.lang.Long node)
-                        (.doubleValue node)
-                        (instance? java.math.BigDecimal node)
-                        (.stripTrailingZeros node)
-                        (instance? java.util.Map$Entry node)
-                        node
-                        (sequential? node)
-                        (seq node)
-                        (instance? Character node)
-                        (str node)
+                  (cond (instance? java.lang.Long node)       (.doubleValue node)
+                        (instance? java.math.BigDecimal node) (.stripTrailingZeros node)
+                        (instance? java.util.Map$Entry node)  node
+                        (sequential? node)                    (seq node)
+                        (instance? Character node)            (str node)
                         :else
                         node))
                 data))

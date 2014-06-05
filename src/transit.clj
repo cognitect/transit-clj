@@ -139,7 +139,8 @@
     (init [_] (transient []))
     (init [_ ^int size] (transient []))
     (add [_ ab item] (conj! ab item))
-    (getAt [_ ab index] (nth ab index))
+    (getAt [_ ab index] (when (< 0 (count ab)) (nth ab index)))
+    (size [_ ab] (count ab))
     (^java.util.List array [_ ab] (persistent! ab))))
 
 (deftype Reader [r])
