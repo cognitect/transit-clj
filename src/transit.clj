@@ -15,10 +15,11 @@
 
 (defn transit-format
   [kw]
-  (-> kw
-      name
-      str/upper-case
-      TransitFactory$Format/valueOf))
+  (TransitFactory$Format/valueOf 
+   (str/join "_" (-> kw
+                     name
+                     str/upper-case
+                     (str/split #"-")))))
 
 (defn tagged-value
   ([tag rep] (tagged-value tag rep nil))
@@ -76,9 +77,9 @@
 (defn writer
   ([out type] (writer out type {}))
   ([^OutputStream out type opts]
-     (if (#{:json :msgpack} type)
+     (if (#{:json :json-machine :json-human :msgpack} type)
        (let [handlers (merge (default-handlers) (:handlers opts))]
-         (Writer. (TransitFactory/writer (transit-format type) out handlers (get opts :cache true))))
+         (Writer. (TransitFactory/writer (transit-format type) out handlers)))
        (throw (ex-info "Type must be :json or :msgpack" {:type type})))))
 
 (defn write [^Writer writer o] (.write ^com.cognitect.transit.Writer (.w writer) o))
@@ -139,8 +140,6 @@
     (init [_] (transient []))
     (init [_ ^int size] (transient []))
     (add [_ ab item] (conj! ab item))
-    (getAt [_ ab index] (when (< 0 (count ab)) (nth ab index)))
-    (size [_ ab] (count ab))
     (^java.util.List array [_ ab] (persistent! ab))))
 
 (deftype Reader [r])
@@ -148,7 +147,7 @@
 (defn reader
   ([in type] (reader in type {}))
   ([^InputStream in type opts]
-     (if (#{:json :msgpack} type)
+     (if (#{:json :json-machine :json-human :msgpack} type)
        (let [decoders (merge (default-decoders) (:decoders opts))]
          (Reader. (TransitFactory/reader (transit-format type)
                                          in
@@ -172,7 +171,8 @@
   (def out (ByteArrayOutputStream. 2000))
 
   (def w (writer out :json))
-  (def w (writer out :json {:cache false}))
+  (def w (writer out :json-machine))
+  (def w (writer out :json-human))
 
   (def w (writer out :msgpack))
 
