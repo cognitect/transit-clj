@@ -86,10 +86,10 @@
 (defn start-process
   "Given a command and enconding, start a process which can roundtrip
   transit data. The command is the path to any program which will
-  start a roundtrip process. The enconding must be either `:json` or
-  `:msgpack`. Returns a map (process map) with keys `:out` the output
-  stream which can be used to send data to the process, `:p` the
-  process and `:reader` a transit reader."
+  start a roundtrip process. The enconding must be either `:json`,
+  `:json-verbose` or `:msgpack`. Returns a map (process map) with keys
+  `:out` the output stream which can be used to send data to the
+  process, `:p` the process and `:reader` a transit reader."
   [command encoding]
   (let [p (.start (ProcessBuilder. [command (name encoding)]))
         out (BufferedOutputStream. (.getOutputStream p))
@@ -213,6 +213,7 @@
    :encoding encoding})
 
 (def extension {:json ".json"
+                :json-verbose ".json"
                 :msgpack ".mp"})
 
 (defn exemplar-transit
@@ -243,7 +244,7 @@
               :input (mapv #(edn->test-input % encoding) cc/forms)
               :test-name :corner-case-edn
               :test #(test-each proc %)}
-             {:pred (fn [_ e _] (= e :json))
+             {:pred (fn [_ e _] (contains? #{:json :json-verbose} e))
               :desc "JSON transit corner case"
               :input (mapv #(transit->test-input (.getBytes %) encoding) cc/transit-json)
               :test-name :corner-case-transit-json
@@ -273,7 +274,7 @@
   determined by the provided command string."
   [command encoding opts]
   (assert (contains? extension encoding)
-          (str "encoding must be on of" (keys extension)))
+          (str "encoding must be one of " (keys extension)))
   (let [proc (start-process command encoding)
         results {:command command
                  :encoding encoding
@@ -310,10 +311,10 @@
 (defn verify-encodings
   "Given a project name like 'transit-java', 'transit-clj' or
   'transit-ruby', and user provided options, run tests for each
-  encoding specified in the options. Encoding can be either `:json` or
-  `:msgpack`."
+  encoding specified in the options. Encoding can be either `:json`,
+  `:json-verbose` or `:msgpack`."
   [project {:keys [enc] :as opts}]
-  (doseq [e (if enc [enc] [:json :msgpack])]
+  (doseq [e (if enc [enc] [:json :json-verbose :msgpack])]
     (run-test project e opts)))
 
 (defn verify
