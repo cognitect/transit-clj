@@ -6,7 +6,7 @@
   <groupId>com.cognitect</groupId>
   <artifactId>transit-clj</artifactId>
 <!--  <packaging>clojure</packaging> -->
-  <version>0.1.154</version>
+  <version>dev</version>
   <name>transit-clj</name>
   <description>FIXME: write description</description>
   <url>http://example.com/FIXME</url>
