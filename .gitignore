@@ -1,6 +1,7 @@
 /target
 /classes
 /checkouts
+/simple-examples
 *.jar
 *.class
 .DS_Store

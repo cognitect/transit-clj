@@ -1,0 +1,7 @@
+#!/bin/sh -x
+
+if ! -d ../transit/simple-examples; then
+    mkdir -p ../transit/simple-examples
+fi
+
+java -server -Xms1g -Xmx1g -cp `pwd`/test:`bin/classpath` clojure.main test/exemplar.clj
