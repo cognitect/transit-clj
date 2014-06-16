@@ -73,14 +73,20 @@
 
 (defn write-description [file-name description vals]
   (println "##" description)
-  (println "* Files:" (str file-name ".edn") (str file-name ".json") (str file-name ".mp"))
+  (println "* Files:"
+           (str file-name ".edn")
+           (str file-name ".json")
+           (str file-name "_verbose.json")
+           (str file-name ".mp"))
   (println "* Value (EDN)")
   (println)
   (doseq [item vals] (println "    " (pr-str item)))
   (println))
 
 (defn write-transit [dir file-name & vals]
-  (doseq [format [{:type :json, :suffix ".json"} {:type :msgpack :suffix ".mp"}]]
+  (doseq [format [{:type :json, :suffix ".json"}
+                  {:type :json-verbose, :suffix "_verbose.json"}
+                  {:type :msgpack :suffix ".mp"}]]
     (with-open [os (io/output-stream (str dir "/" file-name (:suffix format)))]
       (let [jsw (t/writer os (:type format))]
         (doseq [item vals] (t/write jsw item))))))
@@ -94,8 +100,8 @@
 (defn write-exemplars [dir]
   (binding [*out* (io/writer (str dir "/README.md"))]
     (println "# Example transit files.\n\n")
-    (println "There are three files for each value: An EDN file and two transit files,")
-    (println "one encoded in JSON and one in MessagePack\n\n")
+    (println "There are four files for each value: An EDN file and three transit files,")
+    (println "one encoded in JSON, one in the verbose version of JSON and one in MessagePack\n\n")
     (println "Note: The example transit files in this directory are *generated*.")
     (println "See https://github.com/cognitect/transit-clj/blob/master/test/exemplar.clj\n\n")
 
