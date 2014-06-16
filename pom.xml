@@ -6,7 +6,7 @@
   <groupId>com.cognitect</groupId>
   <artifactId>transit-clj</artifactId>
 <!--  <packaging>clojure</packaging> -->
-  <version>dev</version>
+  <version>0.1.154</version>
   <name>transit-clj</name>
   <description>FIXME: write description</description>
   <url>http://example.com/FIXME</url>
@@ -94,7 +94,7 @@
     <dependency>
       <groupId>com.cognitect</groupId>
       <artifactId>transit-java</artifactId>
-      <version>0.1.162</version>
+      <version>0.1.164</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
