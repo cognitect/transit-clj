@@ -77,10 +77,10 @@
 (defn writer
   ([out type] (writer out type {}))
   ([^OutputStream out type opts]
-     (if (#{:json :json-machine :json-human :msgpack} type)
+     (if (#{:json :json-verbose :msgpack} type)
        (let [handlers (merge (default-handlers) (:handlers opts))]
          (Writer. (TransitFactory/writer (transit-format type) out handlers)))
-       (throw (ex-info "Type must be :json or :msgpack" {:type type})))))
+       (throw (ex-info "Type must be :json, :json-verbose or :msgpack" {:type type})))))
 
 (defn write [^Writer writer o] (.write ^com.cognitect.transit.Writer (.w writer) o))
 
@@ -147,7 +147,7 @@
 (defn reader
   ([in type] (reader in type {}))
   ([^InputStream in type opts]
-     (if (#{:json :json-machine :json-human :msgpack} type)
+     (if (#{:json :json-verbose :msgpack} type)
        (let [decoders (merge (default-decoders) (:decoders opts))]
          (Reader. (TransitFactory/reader (transit-format type)
                                          in
@@ -156,7 +156,7 @@
                                          (list-builder)
                                          (array-builder)
                                          (set-builder))))
-       (throw (ex-info "Type must be :json or :msgpack" {:type type})))))
+       (throw (ex-info "Type must be :json, :json-verbose or :msgpack" {:type type})))))
 
 (defn read [^Reader reader] (.read ^com.cognitect.transit.Reader (.r reader)))
 
@@ -171,8 +171,7 @@
   (def out (ByteArrayOutputStream. 2000))
 
   (def w (writer out :json))
-  (def w (writer out :json-machine))
-  (def w (writer out :json-human))
+  (def w (writer out :json-verbose))
 
   (def w (writer out :msgpack))
 
