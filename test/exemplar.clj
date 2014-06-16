@@ -1,15 +1,15 @@
 ;; Copyright (c) Cognitect, Inc.
 ;; All rights reserved.
 
-(ns exemplar
+(ns transit.exemplar
   (:require [transit :as t]
             [clojure.java.io :as io])
-  (:import [java.net URI]))
+  (:import [java.net URI]
+           [java.io File FileOutputStream ByteArrayInputStream
+                    ByteArrayOutputStream OutputStreamWriter]))
 
 ;; Generate a set of increasingly complex transit files.
 ;; Output checked into the transit repo under simple-examples.
-
-(import [java.io File FileOutputStream ByteArrayInputStream ByteArrayOutputStream OutputStreamWriter])
 
 (defn range-centered-on
   ([n] (range-centered-on n 5))
@@ -278,4 +278,5 @@
       "Vector with vals with unrecognized encodings"
       ["`~notrecognized"])))
 
-(write-exemplars "simple-examples")
+(defn -main [& args]
+ (write-exemplars "simple-examples"))
