@@ -94,6 +94,14 @@ Add bin/roundtrip scripts for the other implementations
 Get it working with msgpack
 Improve equality testing for generative tests (compariting floats returned from Ruby)
 
+### Building the simple-examples
+
+To build the simple examples, simply make sure the software is up to date
+and run the script bin/exemplars. This will generate a large number of example
+files in simple-examples. By convention we keep the latest versions of the
+examples files checked in in the transit repo.
+
+
 ## License
 
 Copyright © 2014 FIXME
