@@ -258,7 +258,7 @@
       dir
       "map_unrecognized_vals"
       "Map with vals with unrecognized encodings"
-      {:key "`~notrecognized"})
+      {:key "~Unrecognized"})
 
     (write-exemplar
       dir
@@ -282,7 +282,7 @@
       dir
       "vector_unrecognized_vals"
       "Vector with vals with unrecognized encodings"
-      ["`~notrecognized"])))
+      ["~Unrecognized"])))
 
 (defn -main [& args]
  (write-exemplars "simple-examples"))
