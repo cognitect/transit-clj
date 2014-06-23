@@ -76,7 +76,7 @@
   (println "* Files:"
            (str file-name ".edn")
            (str file-name ".json")
-           (str file-name "_verbose.json")
+           (str file-name ".json-verbose")
            (str file-name ".mp"))
   (println "* Value (EDN)")
   (println)
@@ -85,7 +85,7 @@
 
 (defn write-transit [dir file-name & vals]
   (doseq [format [{:type :json, :suffix ".json"}
-                  {:type :json-verbose, :suffix "_verbose.json"}
+                  {:type :json-verbose, :suffix ".json-verbose"}
                   {:type :msgpack :suffix ".mp"}]]
     (with-open [os (io/output-stream (str dir "/" file-name (:suffix format)))]
       (let [jsw (t/writer os (:type format))]
