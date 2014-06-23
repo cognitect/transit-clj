@@ -83,6 +83,11 @@
         <enabled>true</enabled>
       </releases>
     </repository>
+    <repository>
+      <id>datomic-maven</id>
+      <name>Datomic Internal Maven</name>
+      <url>s3://datomic-maven/releases</url>
+    </repository>
   </repositories>
   <dependencies>
     <dependency>
