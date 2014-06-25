@@ -212,9 +212,9 @@
    :hex (Hex/encodeHexString transit)
    :encoding encoding})
 
-(def extension {:json ".json"
-                :json-verbose ".json"
-                :msgpack ".mp"})
+(def extension {:json         ".json"
+                :json-verbose ".json-verbose"
+                :msgpack      ".mp"})
 
 (defn exemplar-transit
   "Given an encoding, return a collection of test inputs in that
