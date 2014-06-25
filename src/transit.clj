@@ -158,10 +158,12 @@
   ([in type] (reader in type {}))
   ([^InputStream in type opts]
      (if (#{:json :json-verbose :msgpack} type)
-       (let [decoders (merge (default-decoders) (:decoders opts))]
+       (let [decoders (merge (default-decoders) (:decoders opts))
+             default-decoder (:default-decoder opts)]
          (Reader. (TransitFactory/reader (transit-format type)
                                          in
                                          decoders
+                                         default-decoder
                                          (map-builder)
                                          (list-builder)
                                          (array-builder)
