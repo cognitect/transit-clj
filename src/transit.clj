@@ -164,7 +164,8 @@
   ([^InputStream in type opts]
      (if (#{:json :json-verbose :msgpack} type)
        (let [decoders (merge (default-decoders) (:decoders opts))
-             default-decoder (:default-decoder opts)]
+             default-decoder (or (:default-decoder opts)
+                                 (TransitFactory/defaultDefaultDecoder))]
          (Reader. (TransitFactory/reader (transit-format type)
                                          in
                                          decoders
@@ -203,6 +204,7 @@
   (write w (int-array (range 10)))
   (write w {[:a :b] 2})
   (write w [123N])
+  (write w 1/3)
 
   (def in (ByteArrayInputStream. (.toByteArray out)))
 
