@@ -47,10 +47,10 @@
      (make-handler tag-fn rep-fn str-rep-fn nil))
   ([tag-fn rep-fn str-rep-fn verbose-handler-fn]
      (reify Handler
-       (tag [_ o] (tag-fn o))
-       (rep [_ o] (rep-fn o))
-       (stringRep [_ o] (when str-rep-fn (str-rep-fn o)))
-       (verboseHandler [_] (when verbose-handler-fn (verbose-handler-fn))))))
+       (getTag [_ o] (tag-fn o))
+       (getRep [_ o] (rep-fn o))
+       (getStringRep [_ o] (when str-rep-fn (str-rep-fn o)))
+       (getVerboseHandler [_] (when verbose-handler-fn (verbose-handler-fn))))))
 
 (defn default-handlers
   "Returns a map of default Handlers for
@@ -61,38 +61,38 @@
   {
    java.util.List
    (reify Handler
-     (tag [_ l] (if (seq? l) "list" "array"))
-     (rep [_ l] (if (seq? l) (TransitFactory/taggedValue "array" l ) l))
-     (stringRep [_ _] nil)
-     (verboseHandler [_] nil))
+     (getTag [_ l] (if (seq? l) "list" "array"))
+     (getRep [_ l] (if (seq? l) (TransitFactory/taggedValue "array" l ) l))
+     (getStringRep [_ _] nil)
+     (getVerboseHandler [_] nil))
 
    clojure.lang.BigInt
    (reify Handler
-     (tag [_ _] "n")
-     (rep [_ bi] (str (biginteger bi)))
-     (stringRep [this bi] (.rep this bi))
-     (verboseHandler [_] nil))
+     (getTag [_ _] "n")
+     (getRep [_ bi] (str (biginteger bi)))
+     (getStringRep [this bi] (.getRep this bi))
+     (getVerboseHandler [_] nil))
 
    clojure.lang.Keyword
    (reify Handler
-     (tag [_ _] ":")
-     (rep [_ kw] (nsed-name kw))
-     (stringRep [_ kw] (nsed-name kw))
-     (verboseHandler [_] nil))
+     (getTag [_ _] ":")
+     (getRep [_ kw] (nsed-name kw))
+     (getStringRep [_ kw] (nsed-name kw))
+     (getVerboseHandler [_] nil))
 
    clojure.lang.Ratio
    (reify Handler
-     (tag [_ _] "ratio")
-     (rep [_ r] (TransitFactory/taggedValue "array" [(numerator r) (denominator r)]))
-     (stringRep [_ _] nil)
-     (verboseHandler [_] nil))
+     (getTag [_ _] "ratio")
+     (getRep [_ r] (TransitFactory/taggedValue "array" [(numerator r) (denominator r)]))
+     (getStringRep [_ _] nil)
+     (getVerboseHandler [_] nil))
 
    clojure.lang.Symbol
    (reify Handler
-     (tag [_ _] "$")
-     (rep [_ sym] (nsed-name sym))
-     (stringRep [_ sym] (nsed-name sym))
-     (verboseHandler [_] nil))
+     (getTag [_ _] "$")
+     (getRep [_ sym] (nsed-name sym))
+     (getStringRep [_ sym] (nsed-name sym))
+     (getVerboseHandler [_] nil))
    })
 
 (deftype Writer [w])
