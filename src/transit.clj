@@ -55,9 +55,9 @@
 
    clojure.lang.BigInt
    (reify Handler
-     (tag [_ _] "i")
-     (rep [_ bi] (biginteger bi))
-     (stringRep [_ bi] (str bi))
+     (tag [_ _] "n")
+     (rep [_ bi] (str (biginteger bi)))
+     (stringRep [this bi] (.rep this bi))
      (verboseHandler [_] nil))
 
    clojure.lang.Keyword
@@ -115,7 +115,12 @@
    "ratio"
    (reify Decoder
      (decode [_ o] (/ (.get ^java.util.List o 0)
-                      (.get ^java.util.List o 1))))})
+                      (.get ^java.util.List o 1))))
+
+   "n"
+   (reify Decoder
+     (decode [_ o] (clojure.lang.BigInt/fromBigInteger
+                    (BigInteger. ^String o))))})
 
 (defn map-builder
   []
@@ -197,6 +202,7 @@
   (write w [#{1 2} #{1 2}])
   (write w (int-array (range 10)))
   (write w {[:a :b] 2})
+  (write w [123N])
 
   (def in (ByteArrayInputStream. (.toByteArray out)))
 
@@ -216,12 +222,12 @@
   (def ext-handlers
     {Point
      (make-handler (constantly "point")
-                     (fn [p] (com.cognitect.transit.impl.TaggedValue. "array" [(.x p) (.y p)]))
-                     (constantly nil))
+                   (fn [p] [(.x p) (.y p)])
+                   (constantly nil))
      Circle
      (make-handler (constantly "circle")
-                     (fn [c] (com.cognitect.transit.impl.TaggedValue. "array" [(.c c) (.r c)]))
-                     (constantly nil))})
+                   (fn [c] [(.c c) (.r c)])
+                   (constantly nil))})
 
   (def ext-decoders
     {"point"
