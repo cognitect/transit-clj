@@ -234,7 +234,7 @@
   [proc encoding opts]
   (let [transit-exemplars (exemplar-transit encoding)]
     (filter #((:pred %) proc encoding opts)
-            [{:pred (constantly true)
+            [#_{:pred (constantly true)
               :desc "exemplar file"
               :input transit-exemplars
               :test-name :exemplar-file
