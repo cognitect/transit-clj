@@ -2,6 +2,8 @@
 ;; All rights reserved.
 
 (ns transit
+  "An implementation of the transit-format for Clojure built
+   on top of the transit-java library."
   (:refer-clojure :exclude [read])
   (:require [clojure.string :as str])
   (:import [com.cognitect.transit Handler Decoder
@@ -13,7 +15,8 @@
 
 (set! *warn-on-reflection* true)
 
-(defn transit-format
+(defn- transit-format
+  "Converts a keyword to a TransitFactory$Format value."
   [kw]
   (TransitFactory$Format/valueOf 
    (str/join "_" (-> kw
@@ -22,69 +25,87 @@
                      (str/split #"-")))))
 
 (defn tagged-value
+  "Creates a TaggedValue object."
   ([tag rep] (tagged-value tag rep nil))
   ([tag rep str-rep] (TransitFactory/taggedValue tag rep str-rep)))
 
 (defn nsed-name
+  "Convert a keyword or symbol to a string in
+   namespace/name format."
   [^clojure.lang.Named kw-or-sym]
   (if-let [ns (.getNamespace kw-or-sym)]
     (str ns "/" (.getName kw-or-sym))
     (.getName kw-or-sym)))
 
 (defn make-handler
+  "Creates a transit Handler whose tag, rep,
+   stringRep, and verboseHandler methods
+   invoke the provided fns."
   ([tag-fn rep-fn]
      (make-handler tag-fn rep-fn nil nil))
   ([tag-fn rep-fn str-rep-fn]
      (make-handler tag-fn rep-fn str-rep-fn nil))
   ([tag-fn rep-fn str-rep-fn verbose-handler-fn]
      (reify Handler
-       (tag [_ o] (tag-fn o))
-       (rep [_ o] (rep-fn o))
-       (stringRep [_ o] (when str-rep-fn (str-rep-fn o)))
-       (verboseHandler [_] (when verbose-handler-fn (verbose-handler-fn))))))
+       (getTag [_ o] (tag-fn o))
+       (getRep [_ o] (rep-fn o))
+       (getStringRep [_ o] (when str-rep-fn (str-rep-fn o)))
+       (getVerboseHandler [_] (when verbose-handler-fn (verbose-handler-fn))))))
 
 (defn default-handlers
+  "Returns a map of default Handlers for
+   Clojure types. Java types are handled
+   by the default Handlers provided by the
+   transit-java library."
   []
   {
    java.util.List
    (reify Handler
-     (tag [_ l] (if (seq? l) "list" "array"))
-     (rep [_ l] (if (seq? l) (TransitFactory/taggedValue "array" l ) l))
-     (stringRep [_ _] nil)
-     (verboseHandler [_] nil))
+     (getTag [_ l] (if (seq? l) "list" "array"))
+     (getRep [_ l] (if (seq? l) (TransitFactory/taggedValue "array" l ) l))
+     (getStringRep [_ _] nil)
+     (getVerboseHandler [_] nil))
 
    clojure.lang.BigInt
    (reify Handler
-     (tag [_ _] "n")
-     (rep [_ bi] (str (biginteger bi)))
-     (stringRep [this bi] (.rep this bi))
-     (verboseHandler [_] nil))
+     (getTag [_ _] "n")
+     (getRep [_ bi] (str (biginteger bi)))
+     (getStringRep [this bi] (.getRep this bi))
+     (getVerboseHandler [_] nil))
 
    clojure.lang.Keyword
    (reify Handler
-     (tag [_ _] ":")
-     (rep [_ kw] (nsed-name kw))
-     (stringRep [_ kw] (nsed-name kw))
-     (verboseHandler [_] nil))
+     (getTag [_ _] ":")
+     (getRep [_ kw] (nsed-name kw))
+     (getStringRep [_ kw] (nsed-name kw))
+     (getVerboseHandler [_] nil))
 
    clojure.lang.Ratio
    (reify Handler
-     (tag [_ _] "ratio")
-     (rep [_ r] (TransitFactory/taggedValue "array" [(numerator r) (denominator r)]))
-     (stringRep [_ _] nil)
-     (verboseHandler [_] nil))
+     (getTag [_ _] "ratio")
+     (getRep [_ r] (TransitFactory/taggedValue "array" [(numerator r) (denominator r)]))
+     (getStringRep [_ _] nil)
+     (getVerboseHandler [_] nil))
 
    clojure.lang.Symbol
    (reify Handler
-     (tag [_ _] "$")
-     (rep [_ sym] (nsed-name sym))
-     (stringRep [_ sym] (nsed-name sym))
-     (verboseHandler [_] nil))
+     (getTag [_ _] "$")
+     (getRep [_ sym] (nsed-name sym))
+     (getStringRep [_ sym] (nsed-name sym))
+     (getVerboseHandler [_] nil))
    })
 
 (deftype Writer [w])
 
 (defn writer
+  "Creates a writer over the privided destination `out` using
+   the specified format, one of: :msgpack, :json or :json-verbose.
+
+   An optional opts map may be passed. Supported options are:
+
+   :Handlers - a map of types to Handler instances, they are merged
+   with the default-handlers and then with the default handlers
+   provided by transit-java."
   ([out type] (writer out type {}))
   ([^OutputStream out type opts]
      (if (#{:json :json-verbose :msgpack} type)
@@ -92,17 +113,26 @@
          (Writer. (TransitFactory/writer (transit-format type) out handlers)))
        (throw (ex-info "Type must be :json, :json-verbose or :msgpack" {:type type})))))
 
-(defn write [^Writer writer o] (.write ^com.cognitect.transit.Writer (.w writer) o))
+(defn write
+  "Writes a value to a transit writer."
+  [^Writer writer o]
+  (.write ^com.cognitect.transit.Writer (.w writer) o))
 
 
 ;; reading
 
 (defn make-decoder
+  "Creates a transit Decoder whose decode
+   method invokes the provided fn."
   [decode-fn]
   (reify Decoder
     (decode [_ o] (decode-fn o))))
 
 (defn default-decoders
+  "Returns a map of default Decoders for
+   Clojure types. Java types are handled
+   by the default Decoders provided by the
+   transit-java library."
   []
   {":"
    (reify Decoder
@@ -123,6 +153,8 @@
                     (BigInteger. ^String o))))})
 
 (defn map-builder
+  "Creates a MapBuilder that makes Clojure-
+   compatible maps."
   []
   (reify MapBuilder
     (init [_] (transient {}))
@@ -132,6 +164,8 @@
 
 (defn list-builder
   []
+  "Creates a ListBuilder that makes Clojure-
+   compatible list."
   (reify ListBuilder
     (init [_] (java.util.ArrayList.))
     (init [_ ^int size] (java.util.ArrayList. size))
@@ -143,6 +177,8 @@
 
 (defn set-builder
   []
+  "Creates a SetBuilder that makes Clojure-
+   compatible sets."
   (reify SetBuilder
     (init [_] (transient #{}))
     (init [_ ^int size] (transient #{}))
@@ -151,6 +187,8 @@
 
 (defn array-builder
   []
+  "Creates an ArrayBuilder that makes Clojure-
+   compatible lists."
   (reify ArrayBuilder
     (init [_] (transient []))
     (init [_ ^int size] (transient []))
@@ -160,6 +198,20 @@
 (deftype Reader [r])
 
 (defn reader
+  "Creates a reader over the provided source `in` using
+   the specified format, one of: :msgpack, :json or :json-verbose.
+
+   An optional opts map may be passed. Supported options are:
+
+   :decoders - a map of tags to Decoder instances, they are merged
+   with the Clojure default-decoders and then with the default decoders
+   provided by transit-java.
+
+   :default-decoder - an instance of DefaultDecoder, used to process
+   transit encoded values for which there is no other decoder; if
+   :default-decoder is not specified, non-decodable values are returned
+   as TaggedValues; if :default-decoder is set to nil, non-decodable values
+   will raise an exception."
   ([in type] (reader in type {}))
   ([^InputStream in type opts]
      (if (#{:json :json-verbose :msgpack} type)
@@ -176,7 +228,10 @@
                                          (set-builder))))
        (throw (ex-info "Type must be :json, :json-verbose or :msgpack" {:type type})))))
 
-(defn read [^Reader reader] (.read ^com.cognitect.transit.Reader (.r reader)))
+(defn read
+  "Reads a value from a reader."
+  [^Reader reader]
+  (.read ^com.cognitect.transit.Reader (.r reader)))
 
 
 (comment
