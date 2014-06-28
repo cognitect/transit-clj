@@ -106,7 +106,7 @@
     <dependency>
       <groupId>com.cognitect</groupId>
       <artifactId>transit-java</artifactId>
-      <version>0.1.183</version>
+      <version>0.1.186</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
