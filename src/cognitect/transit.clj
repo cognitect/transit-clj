@@ -9,6 +9,7 @@
   (:import [com.cognitect.transit Handler Decoder
             TransitFactory TransitFactory$Format
             MapBuilder ListBuilder ArrayBuilder SetBuilder]
+           [com.cognitect.transit.impl ReaderSPI]
            [java.io InputStream OutputStream]))
 
 ;; writing
@@ -216,16 +217,16 @@
   ([^InputStream in type opts]
      (if (#{:json :json-verbose :msgpack} type)
        (let [decoders (merge (default-decoders) (:decoders opts))
-             default-decoder (or (:default-decoder opts)
-                                 (TransitFactory/defaultDefaultDecoder))]
-         (Reader. (TransitFactory/reader (transit-format type)
-                                         in
-                                         decoders
-                                         default-decoder
-                                         (map-builder)
-                                         (list-builder)
-                                         (array-builder)
-                                         (set-builder))))
+             default-decoder (:default-decoder opts)
+             reader (TransitFactory/reader (transit-format type)
+                                           in
+                                           decoders
+                                           default-decoder)]
+         (Reader. (.setBuilders ^ReaderSPI reader
+                                (map-builder)
+                                (list-builder)
+                                (array-builder)
+                                (set-builder))))
        (throw (ex-info "Type must be :json, :json-verbose or :msgpack" {:type type})))))
 
 (defn read
