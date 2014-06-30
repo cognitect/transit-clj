@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -e
+
+echo "Cleaning..."
+rm -rf ./target/autodoc
+
+echo "Building docs..."
+mvn clojure:autodoc
+
+#echo "Deploying..."
+
+#echo "Docs deployed!"
