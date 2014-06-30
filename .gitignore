@@ -2,6 +2,7 @@
 /classes
 /checkouts
 /simple-examples
+last-exception*
 *.jar
 *.class
 .DS_Store
