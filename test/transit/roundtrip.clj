@@ -2,7 +2,7 @@
 ;; All rights reserved.
 
 (ns transit.roundtrip
-  (:require [transit :as t]
+  (:require [cognitect.transit :as t]
             [transit.generators :as gen]
             [clojure.edn :as edn]
             [clojure.data.fressian :as f])

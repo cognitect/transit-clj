@@ -15,7 +15,7 @@
   generative testing and collect timing information."
   (:require [clojure.java.io :as io]
             [clojure.walk :as walk]
-            [transit :as t]
+            [cognitect.transit :as t]
             [transit.generators :as gen]
             [transit.corner-cases :as cc]
             [clojure.pprint :as pp])

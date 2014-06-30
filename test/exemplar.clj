@@ -2,7 +2,7 @@
 ;; All rights reserved.
 
 (ns transit.exemplar
-  (:require [transit :as t]
+  (:require [cognitect.transit :as t]
             [clojure.java.io :as io])
   (:import [java.net URI]
            [java.io File FileOutputStream ByteArrayInputStream

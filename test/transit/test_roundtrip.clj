@@ -2,7 +2,7 @@
 ;; All rights reserved.
 
 (ns transit.test-roundtrip
-  (:require [transit :as t]
+  (:require [cognitect.transit :as t]
             [clojure.java.io :as io]))
 
 (defn -main [& args]

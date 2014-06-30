@@ -1,7 +1,7 @@
 ;; Copyright (c) Cognitect, Inc.
 ;; All rights reserved.
 
-(ns transit
+(ns cognitect.transit
   "An implementation of the transit-format for Clojure built
    on top of the transit-java library."
   (:refer-clojure :exclude [read])
