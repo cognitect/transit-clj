@@ -237,8 +237,8 @@
 
 (comment
 
-  (require 'transit)
-  (in-ns 'transit)
+  (require 'cognitect.transit)
+  (in-ns 'cognitect.transit)
 
   (import [java.io File ByteArrayInputStream ByteArrayOutputStream OutputStreamWriter])
 
