@@ -234,6 +234,39 @@
   [^Reader reader]
   (.read ^com.cognitect.transit.Reader (.r reader)))
 
+(defn record-handler
+  "Creates a handler for a record type"
+  [^Class type]
+  (reify Handler
+    (getTag [_ _] (.getName type))
+    (getRep [_ rec] (tagged-value "map" rec))
+    (getStringRep [_ _] nil)
+    (getVerboseHandler [_] nil)))
+
+(defn record-handlers
+  "Creates a map of record types to handlers"
+  [& types]
+  (reduce (fn [h t] (assoc h t (record-handler t)))
+          {}
+          types))
+
+(defn record-decoder
+  "Creates a decoder for a record type"
+  [^Class type]
+  (let [type-name (str/split (.getName type) #"\.")
+        map-fn (-> (str (str/join "." (butlast type-name)) "/map->" (last type-name))
+                   symbol
+                   resolve)]
+    (reify Decoder
+      (decode [_ m]
+        (map-fn m)))))
+
+(defn record-decoders
+  "Creates a map of record type tags to decoders"
+  [& types]
+  (reduce (fn [d ^Class t] (assoc d (.getName t) (record-decoder t)))
+          {}
+          types))
 
 (comment
 
@@ -292,6 +325,12 @@
      (make-decoder (fn [[x y]] (prn "making a point") (Point. x y)))
      "circle"
      (make-decoder (fn [[c r]] (prn "making a circle") (Circle. c r)))})
+
+  (def ext-handlers
+    (record-handlers Point Circle))
+
+  (def ext-decoders
+    (record-decoders Point Circle))
 
   (def out (ByteArrayOutputStream. 2000))
   (def w (writer out :json {:handlers ext-handlers}))
