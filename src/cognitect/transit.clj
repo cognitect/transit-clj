@@ -27,8 +27,7 @@
 
 (defn tagged-value
   "Creates a TaggedValue object."
-  ([tag rep] (tagged-value tag rep nil))
-  ([tag rep str-rep] (TransitFactory/taggedValue tag rep str-rep)))
+  [tag rep] (TransitFactory/taggedValue tag rep))
 
 (defn nsed-name
   "Convert a keyword or symbol to a string in
