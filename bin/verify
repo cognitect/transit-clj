@@ -22,4 +22,10 @@ if [ -z "$ARGS" ] || [[ $ARGS == *cljs* ]]; then
   bin/get-transit-cljs
 fi
 
+if [ -z "$ARGS" ] || [[ $ARGS == *python* ]]; then
+  bin/get-transit-python
+fi
+
+
 exec java -server -Xms1g -Xmx1g -cp `bin/classpath`:`pwd`/test clojure.main -m transit.verify "$@"
+
