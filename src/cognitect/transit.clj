@@ -7,9 +7,9 @@
   (:refer-clojure :exclude [read])
   (:require [clojure.string :as str])
   (:import [com.cognitect.transit Handler Decoder
-            TransitFactory TransitFactory$Format
+            TransitFactory TransitFactory$Format]
+           [com.cognitect.transit.impl ReaderSPI
             MapBuilder ListBuilder ArrayBuilder SetBuilder]
-           [com.cognitect.transit.impl ReaderSPI]
            [java.io InputStream OutputStream]))
 
 ;; writing
