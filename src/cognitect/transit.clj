@@ -6,10 +6,10 @@
    on top of the transit-java library."
   (:refer-clojure :exclude [read])
   (:require [clojure.string :as str])
-  (:import [com.cognitect.transit Handler Decoder
-            TransitFactory TransitFactory$Format]
+  (:import [com.cognitect.transit WriteHandler ReadHandler
+            ArrayReader TransitFactory TransitFactory$Format]
            [com.cognitect.transit.impl ReaderSPI
-            MapBuilder ListBuilder ArrayBuilder SetBuilder]
+            MapBuilder ArrayBuilder]
            [java.io InputStream OutputStream]))
 
 ;; writing
@@ -37,58 +37,58 @@
     (str ns "/" (.getName kw-or-sym))
     (.getName kw-or-sym)))
 
-(defn make-handler
-  "Creates a transit Handler whose tag, rep,
-   stringRep, and verboseHandler methods
+(defn write-handler
+  "Creates a transit WriteHandler whose tag, rep,
+   stringRep, and verboseWriteHandler methods
    invoke the provided fns."
   ([tag-fn rep-fn]
-     (make-handler tag-fn rep-fn nil nil))
+     (write-handler tag-fn rep-fn nil nil))
   ([tag-fn rep-fn str-rep-fn]
-     (make-handler tag-fn rep-fn str-rep-fn nil))
+     (write-handler tag-fn rep-fn str-rep-fn nil))
   ([tag-fn rep-fn str-rep-fn verbose-handler-fn]
-     (reify Handler
+     (reify WriteHandler
        (getTag [_ o] (tag-fn o))
        (getRep [_ o] (rep-fn o))
        (getStringRep [_ o] (when str-rep-fn (str-rep-fn o)))
        (getVerboseHandler [_] (when verbose-handler-fn (verbose-handler-fn))))))
 
-(defn default-handlers
-  "Returns a map of default Handlers for
+(defn default-write-handlers
+  "Returns a map of default WriteHandlers for
    Clojure types. Java types are handled
-   by the default Handlers provided by the
+   by the default WriteHandlers provided by the
    transit-java library."
   []
   {
    java.util.List
-   (reify Handler
+   (reify WriteHandler
      (getTag [_ l] (if (seq? l) "list" "array"))
      (getRep [_ l] (if (seq? l) (TransitFactory/taggedValue "array" l ) l))
      (getStringRep [_ _] nil)
      (getVerboseHandler [_] nil))
 
    clojure.lang.BigInt
-   (reify Handler
+   (reify WriteHandler
      (getTag [_ _] "n")
      (getRep [_ bi] (str (biginteger bi)))
      (getStringRep [this bi] (.getRep this bi))
      (getVerboseHandler [_] nil))
 
    clojure.lang.Keyword
-   (reify Handler
+   (reify WriteHandler
      (getTag [_ _] ":")
      (getRep [_ kw] (nsed-name kw))
      (getStringRep [_ kw] (nsed-name kw))
      (getVerboseHandler [_] nil))
 
    clojure.lang.Ratio
-   (reify Handler
+   (reify WriteHandler
      (getTag [_ _] "ratio")
      (getRep [_ r] (TransitFactory/taggedValue "array" [(numerator r) (denominator r)]))
      (getStringRep [_ _] nil)
      (getVerboseHandler [_] nil))
 
    clojure.lang.Symbol
-   (reify Handler
+   (reify WriteHandler
      (getTag [_ _] "$")
      (getRep [_ sym] (nsed-name sym))
      (getStringRep [_ sym] (nsed-name sym))
@@ -103,13 +103,13 @@
 
    An optional opts map may be passed. Supported options are:
 
-   :Handlers - a map of types to Handler instances, they are merged
+   :Handlers - a map of types to WriteHandler instances, they are merged
    with the default-handlers and then with the default handlers
    provided by transit-java."
   ([out type] (writer out type {}))
   ([^OutputStream out type opts]
      (if (#{:json :json-verbose :msgpack} type)
-       (let [handlers (merge (default-handlers) (:handlers opts))]
+       (let [handlers (merge (default-write-handlers) (:handlers opts))]
          (Writer. (TransitFactory/writer (transit-format type) out handlers)))
        (throw (ex-info "Type must be :json, :json-verbose or :msgpack" {:type type})))))
 
@@ -121,36 +121,92 @@
 
 ;; reading
 
-(defn make-decoder
-  "Creates a transit Decoder whose decode
-   method invokes the provided fn."
-  [decode-fn]
-  (reify Decoder
-    (decode [_ o] (decode-fn o))))
+(defn read-handler
+  "Creates a transit ReadHandler whose fromRep
+   method invokes the provided fn. Optionally,
+   can provide from-array-rep or from-map-rep
+   fn which parser will use for incremental
+   decoding of types with array or map representations,
+   respectively."
+  ([from-rep] (read-handler from-rep nil nil))
+  ([from-rep from-array-rep from-map-rep]
+     (reify ReadHandler
+       (fromRep [_ o] (from-rep o))
+       (fromArrayRep [_] (when from-array-rep (from-array-rep)))
+       (fromMapRep [_] (when from-map-rep (from-map-rep))))))
 
-(defn default-decoders
-  "Returns a map of default Decoders for
+(defn default-read-handlers
+  "Returns a map of default ReadHandlers for
    Clojure types. Java types are handled
-   by the default Decoders provided by the
+   by the default ReadHandlers provided by the
    transit-java library."
   []
   {":"
-   (reify Decoder
-     (decode [_ o] (keyword o)))
+   (reify ReadHandler
+     (fromRep [_ o] (keyword o))
+     (fromArrayRep [_] nil)
+     (fromMapRep [_] nil))
 
    "$"
-   (reify Decoder
-     (decode [_ o] (symbol o)))
+   (reify ReadHandler
+     (fromRep [_ o] (symbol o))
+     (fromArrayRep [_] nil)
+     (fromMapRep [_] nil))
 
    "ratio"
-   (reify Decoder
-     (decode [_ o] (/ (.get ^java.util.List o 0)
-                      (.get ^java.util.List o 1))))
+   (reify ReadHandler
+     (fromRep [_ o] (/ (.get ^java.util.List o 0)
+                       (.get ^java.util.List o 1)))
+     (fromArrayRep [_] nil)
+     (fromMapRep [_] nil))
 
    "n"
-   (reify Decoder
-     (decode [_ o] (clojure.lang.BigInt/fromBigInteger
-                    (BigInteger. ^String o))))})
+   (reify ReadHandler
+     (fromRep [_ o] (clojure.lang.BigInt/fromBigInteger
+                     (BigInteger. ^String o)))
+     (fromArrayRep [_] nil)
+     (fromMapRep [_] nil))
+
+   "set"
+   (reify ReadHandler
+     (fromRep [_ o] o)
+     (fromArrayRep [_]
+       (reify ArrayReader
+         (init [_] (transient #{}))
+         (init [_ ^int size] (transient #{}))
+         (add [_ s item] (conj! s item))
+         (complete [_ s] (persistent! s))))
+     (fromMapRep [_] nil))
+
+   "list"
+   (reify ReadHandler
+     (fromRep [_ o] o)
+     (fromArrayRep [_]
+       (reify ArrayReader
+         (init [_] (java.util.ArrayList.))
+         (init [_ ^int size] (java.util.ArrayList. size))
+         (add [_ l item] (.add ^java.util.List l item) l)
+         (complete [_ l] (or (seq l) '()))))
+     (fromMapRep [_] nil))
+
+   "cmap"
+   (reify ReadHandler
+     (fromRep [_ o] o)
+     (fromArrayRep [_]
+       (let [next-key (atom nil)]
+         (reify ArrayReader
+           (init [_] (transient {}))
+           (init [_ ^int size] (transient {}))
+           (add [_ m item]
+             (if-let [k @next-key]
+               (do
+                 (reset! next-key nil)
+                 (assoc! m k item))
+               (do
+                 (reset! next-key item)
+                 m)))
+           (complete [_ m] (persistent! m)))))
+     (fromMapRep [_] nil))})
 
 (defn map-builder
   "Creates a MapBuilder that makes Clojure-
@@ -159,31 +215,8 @@
   (reify MapBuilder
     (init [_] (transient {}))
     (init [_ ^int size] (transient {}))
-    (add [_ mb k v] (assoc! mb k v))
-    (^java.util.Map map [_ mb] (persistent! mb))))
-
-(defn list-builder
-  []
-  "Creates a ListBuilder that makes Clojure-
-   compatible list."
-  (reify ListBuilder
-    (init [_] (java.util.ArrayList.))
-    (init [_ ^int size] (java.util.ArrayList. size))
-    (add [_ lb item] (.add ^java.util.List lb item) lb)
-    (^java.util.List list [_ lb]
-      (or (seq lb) '())
-      #_(apply list lb)
-      )))
-
-(defn set-builder
-  []
-  "Creates a SetBuilder that makes Clojure-
-   compatible sets."
-  (reify SetBuilder
-    (init [_] (transient #{}))
-    (init [_ ^int size] (transient #{}))
-    (add [_ sb item] (conj! sb item))
-    (^java.util.Set set [_ sb] (persistent! sb))))
+    (add [_ m k v] (assoc! m k v))
+    (^java.util.Map complete [_ m] (persistent! m))))
 
 (defn array-builder
   []
@@ -192,8 +225,8 @@
   (reify ArrayBuilder
     (init [_] (transient []))
     (init [_ ^int size] (transient []))
-    (add [_ ab item] (conj! ab item))
-    (^java.util.List array [_ ab] (persistent! ab))))
+    (add [_ v item] (conj! v item))
+    (^java.util.List complete [_ v] (persistent! v))))
 
 (deftype Reader [r])
 
@@ -203,29 +236,26 @@
 
    An optional opts map may be passed. Supported options are:
 
-   :decoders - a map of tags to Decoder instances, they are merged
-   with the Clojure default-decoders and then with the default decoders
+   :handlers - a map of tags to ReadHandler instances, they are merged
+   with the Clojure default-read-handlers and then with the default ReadHandlers
    provided by transit-java.
 
-   :default-decoder - an instance of DefaultDecoder, used to process
-   transit encoded values for which there is no other decoder; if
-   :default-decoder is not specified, non-decodable values are returned
-   as TaggedValues; if :default-decoder is set to nil, non-decodable values
-   will raise an exception."
+   :default-handler - an instance of DefaultReadHandler, used to process
+   transit encoded values for which there is no other ReadHandler; if
+   :default-handler is not specified, non-readable values are returned
+   as TaggedValues."
   ([in type] (reader in type {}))
   ([^InputStream in type opts]
      (if (#{:json :json-verbose :msgpack} type)
-       (let [decoders (merge (default-decoders) (:decoders opts))
-             default-decoder (:default-decoder opts)
+       (let [handlers (merge (default-read-handlers) (:handlers opts))
+             default-handler (:default-handler opts)
              reader (TransitFactory/reader (transit-format type)
                                            in
-                                           decoders
-                                           default-decoder)]
+                                           handlers
+                                           default-handler)]
          (Reader. (.setBuilders ^ReaderSPI reader
                                 (map-builder)
-                                (list-builder)
-                                (array-builder)
-                                (set-builder))))
+                                (array-builder))))
        (throw (ex-info "Type must be :json, :json-verbose or :msgpack" {:type type})))))
 
 (defn read
@@ -233,37 +263,36 @@
   [^Reader reader]
   (.read ^com.cognitect.transit.Reader (.r reader)))
 
-(defn record-handler
-  "Creates a handler for a record type"
+(defn record-write-handler
+  "Creates a WriteHandler for a record type"
   [^Class type]
-  (reify Handler
+  (reify WriteHandler
     (getTag [_ _] (.getName type))
     (getRep [_ rec] (tagged-value "map" rec))
     (getStringRep [_ _] nil)
     (getVerboseHandler [_] nil)))
 
-(defn record-handlers
-  "Creates a map of record types to handlers"
+(defn record-write-handlers
+  "Creates a map of record types to WriteHandlers"
   [& types]
-  (reduce (fn [h t] (assoc h t (record-handler t)))
+  (reduce (fn [h t] (assoc h t (record-write-handler t)))
           {}
           types))
 
-(defn record-decoder
-  "Creates a decoder for a record type"
+(defn record-read-handler
+  "Creates a ReadHandler for a record type"
   [^Class type]
   (let [type-name (str/split (.getName type) #"\.")
-        map-fn (-> (str (str/join "." (butlast type-name)) "/map->" (last type-name))
-                   symbol
-                   resolve)]
-    (reify Decoder
-      (decode [_ m]
-        (map-fn m)))))
+        map-ctor (-> (str (str/join "." (butlast type-name)) "/map->" (last type-name))
+                     symbol
+                     resolve)]
+    (reify ReadHandler
+      (fromRep [_ m] (map-ctor m)))))
 
-(defn record-decoders
-  "Creates a map of record type tags to decoders"
+(defn record-read-handlers
+  "Creates a map of record type tags to ReadHandlers"
   [& types]
-  (reduce (fn [d ^Class t] (assoc d (.getName t) (record-decoder t)))
+  (reduce (fn [d ^Class t] (assoc d (.getName t) (record-read-handler t)))
           {}
           types))
 
@@ -309,34 +338,34 @@
 
   (defrecord Circle [c r])
 
-  (def ext-handlers
+  (def ext-write-handlers
     {Point
-     (make-handler (constantly "point")
-                   (fn [p] [(.x p) (.y p)])
-                   (constantly nil))
+     (write-handler (constantly "point")
+                    (fn [p] [(.x p) (.y p)])
+                    (constantly nil))
      Circle
-     (make-handler (constantly "circle")
-                   (fn [c] [(.c c) (.r c)])
-                   (constantly nil))})
+     (write-handler (constantly "circle")
+                    (fn [c] [(.c c) (.r c)])
+                    (constantly nil))})
 
-  (def ext-decoders
+  (def ext-read-handlers
     {"point"
-     (make-decoder (fn [[x y]] (prn "making a point") (Point. x y)))
+     (read-handler (fn [[x y]] (prn "making a point") (Point. x y)))
      "circle"
-     (make-decoder (fn [[c r]] (prn "making a circle") (Circle. c r)))})
+     (read-handler (fn [[c r]] (prn "making a circle") (Circle. c r)))})
 
-  (def ext-handlers
-    (record-handlers Point Circle))
+  (def ext-write-handlers
+    (record-write-handlers Point Circle))
 
-  (def ext-decoders
-    (record-decoders Point Circle))
+  (def ext-read-handlers
+    (record-read-handlers Point Circle))
 
   (def out (ByteArrayOutputStream. 2000))
-  (def w (writer out :json {:handlers ext-handlers}))
+  (def w (writer out :json {:handlers ext-write-handlers}))
   (write w (Point. 10 20))
   (write w (Circle. (Point. 10 20) 30))
 
   (def in (ByteArrayInputStream. (.toByteArray out)))
-  (def r (reader in :json {:decoders ext-decoders}))
+  (def r (reader in :json {:handlers ext-read-handlers}))
   (read r)
-)
+  )
