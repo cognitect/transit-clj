@@ -58,6 +58,7 @@
       (.toByteArray out))))
 
 (def transit-js-writer (transit-writer :json))
+(def transit-jsv-writer (transit-writer :json-verbose))
 (def transit-mp-writer (transit-writer :msgpack))
 
 (defn transit-reader
@@ -67,11 +68,16 @@
       (t/read r))))
 
 (def transit-js-reader (transit-reader :json))
+(def transit-jsv-reader (transit-reader :json-verbose))
 (def transit-mp-reader (transit-reader :msgpack))
 
 (defn transit-js-rt
   [form]
   ((rt transit-js-writer transit-js-reader alength) form))
+
+(defn transit-jsv-rt
+  [form]
+  ((rt transit-jsv-writer transit-jsv-reader alength) form))
 
 (defn transit-mp-rt
   [form]
@@ -108,6 +114,7 @@
   {:edn (edn-rt form)
    :fressian (fressian-rt form)
    :transit-js (transit-js-rt form)
+   :transit-jsv (transit-jsv-rt form)
    :transit-mp (transit-mp-rt form)
    ;;:transit-js-fake-read (transit-js-rt-fake-read form)
    ;;:transit-mp-fake-read (transit-mp-rt-fake-read form)

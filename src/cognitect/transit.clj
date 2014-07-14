@@ -17,7 +17,7 @@
    on top of the transit-java library."
   (:refer-clojure :exclude [read])
   (:require [clojure.string :as str])
-  (:import [com.cognitect.transit WriteHandler ReadHandler
+  (:import [com.cognitect.transit WriteHandler ReadHandler ArrayReadHandler MapReadHandler
             ArrayReader TransitFactory TransitFactory$Format]
            [com.cognitect.transit.impl ReaderSPI
             MapBuilder ArrayBuilder]
@@ -58,9 +58,9 @@
      (write-handler tag-fn rep-fn str-rep-fn nil))
   ([tag-fn rep-fn str-rep-fn verbose-handler-fn]
      (reify WriteHandler
-       (getTag [_ o] (tag-fn o))
-       (getRep [_ o] (rep-fn o))
-       (getStringRep [_ o] (when str-rep-fn (str-rep-fn o)))
+       (tag [_ o] (tag-fn o))
+       (rep [_ o] (rep-fn o))
+       (stringRep [_ o] (when str-rep-fn (str-rep-fn o)))
        (getVerboseHandler [_] (when verbose-handler-fn (verbose-handler-fn))))))
 
 (defn default-write-handlers
@@ -72,37 +72,37 @@
   {
    java.util.List
    (reify WriteHandler
-     (getTag [_ l] (if (seq? l) "list" "array"))
-     (getRep [_ l] (if (seq? l) (TransitFactory/taggedValue "array" l ) l))
-     (getStringRep [_ _] nil)
+     (tag [_ l] (if (seq? l) "list" "array"))
+     (rep [_ l] (if (seq? l) (TransitFactory/taggedValue "array" l ) l))
+     (stringRep [_ _] nil)
      (getVerboseHandler [_] nil))
 
    clojure.lang.BigInt
    (reify WriteHandler
-     (getTag [_ _] "n")
-     (getRep [_ bi] (str (biginteger bi)))
-     (getStringRep [this bi] (.getRep this bi))
+     (tag [_ _] "n")
+     (rep [_ bi] (str (biginteger bi)))
+     (stringRep [this bi] (.rep this bi))
      (getVerboseHandler [_] nil))
 
    clojure.lang.Keyword
    (reify WriteHandler
-     (getTag [_ _] ":")
-     (getRep [_ kw] (nsed-name kw))
-     (getStringRep [_ kw] (nsed-name kw))
+     (tag [_ _] ":")
+     (rep [_ kw] (nsed-name kw))
+     (stringRep [_ kw] (nsed-name kw))
      (getVerboseHandler [_] nil))
 
    clojure.lang.Ratio
    (reify WriteHandler
-     (getTag [_ _] "ratio")
-     (getRep [_ r] (TransitFactory/taggedValue "array" [(numerator r) (denominator r)]))
-     (getStringRep [_ _] nil)
+     (tag [_ _] "ratio")
+     (rep [_ r] (TransitFactory/taggedValue "array" [(numerator r) (denominator r)]))
+     (stringRep [_ _] nil)
      (getVerboseHandler [_] nil))
 
    clojure.lang.Symbol
    (reify WriteHandler
-     (getTag [_ _] "$")
-     (getRep [_ sym] (nsed-name sym))
-     (getStringRep [_ sym] (nsed-name sym))
+     (tag [_ _] "$")
+     (rep [_ sym] (nsed-name sym))
+     (stringRep [_ sym] (nsed-name sym))
      (getVerboseHandler [_] nil))
    })
 
@@ -134,17 +134,26 @@
 
 (defn read-handler
   "Creates a transit ReadHandler whose fromRep
-   method invokes the provided fn. Optionally,
-   can provide from-array-rep or from-map-rep
-   fn which parser will use for incremental
-   decoding of types with array or map representations,
-   respectively."
-  ([from-rep] (read-handler from-rep nil nil))
-  ([from-rep from-array-rep from-map-rep]
-     (reify ReadHandler
-       (fromRep [_ o] (from-rep o))
-       (fromArrayRep [_] (when from-array-rep (from-array-rep)))
-       (fromMapRep [_] (when from-map-rep (from-map-rep))))))
+   method invokes the provided fn."
+  [from-rep]
+  (reify ReadHandler
+    (fromRep [_ o] (from-rep o))))
+
+(defn read-map-handler
+  "Creates a Transit MapReadHandler whose fromRep
+   and mapReader methods invoke the provided fns."
+  [from-rep map-reader]
+  (reify MapReadHandler
+    (fromRep [_ o] (from-rep o))
+    (mapReader [_] (map-reader))))
+
+(defn read-array-handler
+  "Creates a Transit ArrayReadHandler whose fromRep
+   and arrayReader methods invoke the provided fns."
+  [from-rep array-reader]
+  (reify ArrayReadHandler
+    (fromRep [_ o] (from-rep o))
+    (arrayReader [_] (array-reader))))
 
 (defn default-read-handlers
   "Returns a map of default ReadHandlers for
@@ -154,56 +163,46 @@
   []
   {":"
    (reify ReadHandler
-     (fromRep [_ o] (keyword o))
-     (fromArrayRep [_] nil)
-     (fromMapRep [_] nil))
+     (fromRep [_ o] (keyword o)))
 
    "$"
    (reify ReadHandler
-     (fromRep [_ o] (symbol o))
-     (fromArrayRep [_] nil)
-     (fromMapRep [_] nil))
+     (fromRep [_ o] (symbol o)))
 
    "ratio"
    (reify ReadHandler
      (fromRep [_ o] (/ (.get ^java.util.List o 0)
-                       (.get ^java.util.List o 1)))
-     (fromArrayRep [_] nil)
-     (fromMapRep [_] nil))
+                       (.get ^java.util.List o 1))))
 
    "n"
    (reify ReadHandler
      (fromRep [_ o] (clojure.lang.BigInt/fromBigInteger
-                     (BigInteger. ^String o)))
-     (fromArrayRep [_] nil)
-     (fromMapRep [_] nil))
+                     (BigInteger. ^String o))))
 
    "set"
-   (reify ReadHandler
+   (reify ArrayReadHandler
      (fromRep [_ o] o)
-     (fromArrayRep [_]
+     (arrayReader [_]
        (reify ArrayReader
          (init [_] (transient #{}))
          (init [_ ^int size] (transient #{}))
          (add [_ s item] (conj! s item))
-         (complete [_ s] (persistent! s))))
-     (fromMapRep [_] nil))
+         (complete [_ s] (persistent! s)))))
 
    "list"
-   (reify ReadHandler
+   (reify ArrayReadHandler
      (fromRep [_ o] o)
-     (fromArrayRep [_]
+     (arrayReader [_]
        (reify ArrayReader
          (init [_] (java.util.ArrayList.))
          (init [_ ^int size] (java.util.ArrayList. size))
          (add [_ l item] (.add ^java.util.List l item) l)
-         (complete [_ l] (or (seq l) '()))))
-     (fromMapRep [_] nil))
+         (complete [_ l] (or (seq l) '())))))
 
    "cmap"
-   (reify ReadHandler
+   (reify ArrayReadHandler
      (fromRep [_ o] o)
-     (fromArrayRep [_]
+     (arrayReader [_]
        (let [next-key (atom nil)]
          (reify ArrayReader
            (init [_] (transient {}))
@@ -216,8 +215,7 @@
                (do
                  (reset! next-key item)
                  m)))
-           (complete [_ m] (persistent! m)))))
-     (fromMapRep [_] nil))})
+           (complete [_ m] (persistent! m))))))})
 
 (defn map-builder
   "Creates a MapBuilder that makes Clojure-
@@ -278,9 +276,9 @@
   "Creates a WriteHandler for a record type"
   [^Class type]
   (reify WriteHandler
-    (getTag [_ _] (.getName type))
-    (getRep [_ rec] (tagged-value "map" rec))
-    (getStringRep [_ _] nil)
+    (tag [_ _] (.getName type))
+    (rep [_ rec] (tagged-value "map" rec))
+    (stringRep [_ _] nil)
     (getVerboseHandler [_] nil)))
 
 (defn record-write-handlers
