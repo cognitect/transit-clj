@@ -146,10 +146,8 @@
 
 (defn equalize [data]
   (walk/prewalk (fn [node]
-                  (cond (instance? java.lang.Long node)       (.stripTrailingZeros (bigdec node))
-                        (instance? java.math.BigInteger node) (.stripTrailingZeros (bigdec node))
-                        (instance? clojure.lang.BigInt node)  (.stripTrailingZeros (bigdec node))
-                        (instance? java.math.BigDecimal node) (.stripTrailingZeros node)
+                  (cond (and (number? node)
+                             (not (ratio? node)))             (.stripTrailingZeros (bigdec node))
                         (instance? java.util.Map$Entry node)  node
                         (sequential? node)                    (seq node)
                         (instance? Character node)            (str node)
