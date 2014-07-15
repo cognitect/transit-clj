@@ -54,26 +54,26 @@ Transit is a data format and a set of libraries for conveying values between app
 
 |Transit type|Write accepts|Read returns|
 |------------|-------------|------------|
-|null|null|null|
+|null|nil|nil|
 |string|java.lang.String|java.lang.String|
 |boolean|java.lang.Boolean|java.lang.Boolean|
 |integer|java.lang.Byte, java.lang.Short, java.lang.Integer, java.lang.Long|java.lang.Long|
 |decimal|java.lang.Float, java.lang.Double|java.lang.Double|
-|keyword|Clojure keyword|Clojure keyword|
-|symbol|Clojure symbol|Clojure symbol|
+|keyword|clojure.lang.Keyword|clojure.lang.Keyword|
+|symbol|clojure.lang.Symbol|clojure.lang.Symbol|
 |big decimal|java.math.BigDecimal|java.math.BigDecimal|
-|big integer|clojure.lang.BigInt|clojure.lang.BigInt|
-|time|java.util.Date|long|
-|uri|java.net.URI, cognitect.transit.URI|cognitect.transit.URI|
+|big integer|clojure.lang.BigInt,java.math.BigInteger|clojure.lang.BigInt|
+|time|java.util.Date|java.util.Date|
+|uri|java.net.URI|java.net.URI|
 |uuid|java.util.UUID|java.util.UUID|
 |char|java.lang.Character|java.lang.Character|
-|array|Clojure vector,java.util.List|Clojure vector|
-|list|Clojure sequence|Clojure sequence|
-|set|Clojure set,java.util.Set|Clojure set|
-|map|Clojure map,java.util.Map|Clojure map|
+|array|clojure.lang.IPersistentVector, java.util.List|clojure.lang.IPersistentVector|
+|list|clojure.lang.ISeq|clojure.lang.ISeq|
+|set|clojure.lang.IPersistentSet,java.util.Set|clojure.lang.IPersistentSet|
+|map|clojure.lang.IPersistentMap,java.util.Map|clojure.lang.IPersistentMap|
 |link|cognitect.transit.Link|cognitect.transit.Link|
-|tagged value|Clojure record|Clojure record|
-|ratio +|Clojure ratio|Clojure ratio|
+|tagged value|Clojure record|Clojure record (or map if no read handler)|
+|ratio +|clojure.lang.Ratio|clojure.lang.Ratio|
 
 \+ Extension using tagged values
 
