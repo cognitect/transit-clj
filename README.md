@@ -30,21 +30,24 @@ Transit is a data format and a set of libraries for conveying values between app
 ## Usage
 
 ```clojure
-import java.io.ByteArrayOutputStream;
-import java.io.ByteArrayInputStream;
-import com.cognitect.transit.TransitFactory;
-import com.cognitect.transit.Reader;
-import com.cognitect.transit.Writer;
+(require '[cognitect.transit :as transit])
+(import [java.io ByteArrayInputStream ByteArrayOutputStream])
 
-// Write the data to a stream
-ByteArrayOutputStream baos = new ByteArrayOutputStream();
-Writer writer = TransitFactory.writer(TransitFactory.Format.MSGPACK, baos);
-writer.write(data);
+;; Write data to a stream
+(def out (ByteArrayOutputStream. 4096))
+(def writer (transit/writer out :json))
+(transit/write writer "foo")
+(transit/write writer {:a [1 2]})
 
-// Read the data from a stream
-ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-Reader reader = TransitFactory.reader(TransitFactory.Format.MSGPACK, bais);
-Object data = reader.read();
+;; Take a peek at the JSON
+(.toString out)
+;; => "{\"~#'\":\"foo\"} [\"^ \",\"~:a\",[1,2]]"
+
+;; Read data from a stream
+(def in (ByteArrayInputStream. (.toByteArray out)))
+(def reader (transit/reader in :json))
+(prn (transit/read reader))  ;; => "foo"
+(prn (transit/read reader))  ;; => {:a [1 2]}
 ```
 
 ## Default Type Mapping
@@ -56,21 +59,21 @@ Object data = reader.read();
 |boolean|java.lang.Boolean|java.lang.Boolean|
 |integer|java.lang.Byte, java.lang.Short, java.lang.Integer, java.lang.Long|java.lang.Long|
 |decimal|java.lang.Float, java.lang.Double|java.lang.Double|
-|keyword|cognitect.transit.Keyword|cognitect.transit.Keyword|
-|symbol|cognitect.transit.Symbol|cognitect.transit.Symbol|
+|keyword|Clojure keyword|Clojure keyword|
+|symbol|Clojure symbol|Clojure symbol|
 |big decimal|java.math.BigDecimal|java.math.BigDecimal|
-|big integer|java.math.BigInteger|java.math.BigInteger|
+|big integer|clojure.lang.BigInt|clojure.lang.BigInt|
 |time|java.util.Date|long|
 |uri|java.net.URI, cognitect.transit.URI|cognitect.transit.URI|
 |uuid|java.util.UUID|java.util.UUID|
 |char|java.lang.Character|java.lang.Character|
-|array|Object[],primitive arrays|java.util.ArrayList|
-|list|java.util.List|java.util.LinkedList|
-|set|java.util.Set|java.util.HashSet|
-|map|java.util.Map|java.util.HashMap|
+|array|Clojure vector,java.util.List|Clojure vector|
+|list|Clojure sequence|Clojure sequence|
+|set|Clojure set,java.util.Set|Clojure set|
+|map|Clojure map,java.util.Map|Clojure map|
 |link|cognitect.transit.Link|cognitect.transit.Link|
-|tagged value|cognitect.transit.TaggedValue|cognitect.transit.TaggedValue|
-|ratio +|cognitect.transit.Ratio|cognitect.transit.Ratio|
+|tagged value|Clojure record|Clojure record|
+|ratio +|Clojure ratio|Clojure ratio|
 
 \+ Extension using tagged values
 
