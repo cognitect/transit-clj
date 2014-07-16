@@ -373,6 +373,7 @@
   (def w (writer out :json {:handlers ext-write-handlers}))
   (write w (Point. 10 20))
   (write w (Circle. (Point. 10 20) 30))
+  (write w [(Point. 10 20) (Point. 20 40) (Point. 0 0)])
 
   (def in (ByteArrayInputStream. (.toByteArray out)))
   (def r (reader in :json {:handlers ext-read-handlers}))

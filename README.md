@@ -72,11 +72,9 @@ Transit is a data format and a set of libraries for conveying values between app
 |set|clojure.lang.IPersistentSet,java.util.Set|clojure.lang.IPersistentSet|
 |map|clojure.lang.IPersistentMap,java.util.Map|clojure.lang.IPersistentMap|
 |link|cognitect.transit.Link|cognitect.transit.Link|
-|tagged value|Clojure record|Clojure record (or map if no read handler)|
 |ratio +|clojure.lang.Ratio|clojure.lang.Ratio|
 
 \+ Extension using tagged values
-
 
 ## Contributing 
 
