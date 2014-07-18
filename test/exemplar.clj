@@ -70,13 +70,12 @@
 
 (def symbols ['a 'ab 'abc 'abcd 'abcde 'a1 'b2 'c3 'a_b])
 
-
 (defn write-description [file-name description vals]
   (println "##" description)
   (println "* Files:"
            (str file-name ".edn")
            (str file-name ".json")
-           (str file-name ".json-verbose")
+           (str file-name ".verbose.json")
            (str file-name ".mp"))
   (println "* Value (EDN)")
   (println)
@@ -85,7 +84,7 @@
 
 (defn write-transit [dir file-name & vals]
   (doseq [format [{:type :json, :suffix ".json"}
-                  {:type :json-verbose, :suffix ".json-verbose"}
+                  {:type :json-verbose, :suffix ".verbose.json"}
                   {:type :msgpack :suffix ".mp"}]]
     (with-open [os (io/output-stream (str dir "/" file-name (:suffix format)))]
       (let [jsw (t/writer os (:type format))]
@@ -204,7 +203,7 @@
 
     (write-exemplar dir "map_10_items" "10 item map"  (map-of-size 10))
 
-    (doseq [i [10 90 91 92 93 94 95]]
+    (doseq [i [10 1935 1936 1937]]
       (write-exemplar
         dir
         (str "map_" i "_nested")
@@ -262,21 +261,21 @@
 
     (write-exemplar
       dir
-      "vector_93_keywords_repeated_twice"
-      "Vector of 93 keywords, repeated twice"
-      (vector-of-keywords 93 186))
+      "vector_1935_keywords_repeated_twice"
+      "Vector of 1935 keywords, repeated twice"
+      (vector-of-keywords 1935 3870))
 
     (write-exemplar
       dir
-      "vector_94_keywords_repeated_twice"
-      "Vector of 94 keywords, repeated twice"
-      (vector-of-keywords 94 188))
+      "vector_1936_keywords_repeated_twice"
+      "Vector of 1936 keywords, repeated twice"
+      (vector-of-keywords 1936 3872))
 
     (write-exemplar
       dir
-      "vector_95_keywords_repeated_twice"
-      "Vector of 95 keywords, repeated twice"
-      (vector-of-keywords 95 190))
+      "vector_1937_keywords_repeated_twice"
+      "Vector of 1937 keywords, repeated twice"
+      (vector-of-keywords 1937 3874))
 
     (write-exemplar
       dir

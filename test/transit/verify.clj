@@ -234,7 +234,7 @@
   [encoding]
   (map #(transit->test-input (read-bytes %) encoding)
        (filter #(and (.isFile %) (.endsWith (.getName %) (extension encoding)))
-               (file-seq (io/file "../transit/simple-examples")))))
+               (file-seq (io/file "../transit-format/examples/0.8/simple")))))
 
 (defn filter-tests
   "Given a process, an encoding and options provided by the user,
