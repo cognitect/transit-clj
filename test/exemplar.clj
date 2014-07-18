@@ -204,7 +204,7 @@
 
     (write-exemplar dir "map_10_items" "10 item map"  (map-of-size 10))
 
-    (doseq [i [10 90 91 92 93 94 95]]
+    (doseq [i [10 1935 1936 1937]]
       (write-exemplar
         dir
         (str "map_" i "_nested")
@@ -262,21 +262,21 @@
 
     (write-exemplar
       dir
-      "vector_93_keywords_repeated_twice"
-      "Vector of 93 keywords, repeated twice"
-      (vector-of-keywords 93 186))
+      "vector_1935_keywords_repeated_twice"
+      "Vector of 1935 keywords, repeated twice"
+      (vector-of-keywords 1935 3870))
 
     (write-exemplar
       dir
-      "vector_94_keywords_repeated_twice"
-      "Vector of 94 keywords, repeated twice"
-      (vector-of-keywords 94 188))
+      "vector_1936_keywords_repeated_twice"
+      "Vector of 1936 keywords, repeated twice"
+      (vector-of-keywords 1936 3872))
 
     (write-exemplar
       dir
-      "vector_95_keywords_repeated_twice"
-      "Vector of 95 keywords, repeated twice"
-      (vector-of-keywords 95 190))
+      "vector_1937_keywords_repeated_twice"
+      "Vector of 1937 keywords, repeated twice"
+      (vector-of-keywords 1937 3874))
 
     (write-exemplar
       dir
