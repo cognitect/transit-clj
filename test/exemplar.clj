@@ -70,13 +70,12 @@
 
 (def symbols ['a 'ab 'abc 'abcd 'abcde 'a1 'b2 'c3 'a_b])
 
-
 (defn write-description [file-name description vals]
   (println "##" description)
   (println "* Files:"
            (str file-name ".edn")
            (str file-name ".json")
-           (str file-name ".json-verbose")
+           (str file-name ".verbose.json")
            (str file-name ".mp"))
   (println "* Value (EDN)")
   (println)
@@ -85,7 +84,7 @@
 
 (defn write-transit [dir file-name & vals]
   (doseq [format [{:type :json, :suffix ".json"}
-                  {:type :json-verbose, :suffix ".json-verbose"}
+                  {:type :json-verbose, :suffix ".verbose.json"}
                   {:type :msgpack :suffix ".mp"}]]
     (with-open [os (io/output-stream (str dir "/" file-name (:suffix format)))]
       (let [jsw (t/writer os (:type format))]
