@@ -25,9 +25,9 @@
     </developer>
   </developers>
   <scm>
-    <connection>scm:git:git@github.com:cognitect/transit-java.git</connection>
-    <developerConnection>scm:git:git@github.com:cognitect/transit-java.git</developerConnection>
-    <url>git@github.com:cognitect/transit-java.git</url>
+    <connection>scm:git:git@github.com:cognitect/transit-clj.git</connection>
+    <developerConnection>scm:git:git@github.com:cognitect/transit-clj.git</developerConnection>
+    <url>git@github.com:cognitect/transit-clj.git</url>
   </scm>
   <build>
     <resources>
