@@ -20,8 +20,7 @@ Download and local install:
 
 1. Follow the manual download steps for [transit-java](http://github.com/cognitect/transit-java)
 2. Download and unzip http://cdn.cognitect.com/transit/transit-clj-0.8.229.zip
-3. ```cd transit-clj-0.8.229```
-4. ```mvn install:install-file -DgroupId=com.cognitect -DartifactId=transit-clj -Dfile=transit-clj-0.8.229.jar -DpomFile=transit-clj-0.8.229.pom```
+3. From the unzip directory: ```mvn install:install-file -DgroupId=com.cognitect -DartifactId=transit-clj -Dfile=transit-clj-0.8.229.jar -DpomFile=transit-clj-0.8.229.pom```
 
 
 [Maven](http://maven.apache.org/) dependency information:
