@@ -1,0 +1,368 @@
+<html>
+  <head>
+    <title>cognitect.transit - com.cognitect:transit-clj API documentation</title>
+    <link href="static/favicon.png" rel="icon" />
+    <link href="static/favicon.png" rel="shortcut icon" />
+    <link media="all" type="text/css" href="static/clojure.css" rel="stylesheet" />
+    <link media="all" type="text/css" href="static/wiki.css" rel="stylesheet" />
+    <link media="all" type="text/css" href="static/internal.css" rel="stylesheet" />
+    <style>.menuWrapper{height: 36px;}</style>
+    <!--[if lte IE 6]>
+    <link rel="stylesheet" href="http://www.wikispaces.com/_/2009051601/s/internal_ie.css" type="text/css" />
+    <![endif]-->
+  </head>
+<!--
+This document was auto-generated from the source by the clojure autodoc system.
+To report errors or ask questions about the overall documentation structure, formatting,
+etc., contact Tom Faulhaber (google mail name: tomfaulhaber).
+For errors in the documentation of a particular namespace, contact the author of that
+namespace.
+-->
+  <body>
+    <div id="AllContentContainer">
+      <div id="Header">
+	<a id="Logo" href="index.html"><img alt="Clojure" height="100" width="100" src="static/clojure-icon.gif" /></a>
+	<h1><a title="page header title" id="page-header" href="index.html">com.cognitect:transit-clj</a></h1>
+      </div>
+      <div id="leftcolumn"><div style="text-align: center;"></div>
+<div class="menu">
+  <div class="WikiCustomNav WikiElement wiki">
+    <span class="toc-header"><span id="project-name">com.cognitect:transit-clj</span> <span id="version"></span> API</span><br />
+    <ul>
+      <li><a class="wiki_link" href="index.html">Overview</a></li>
+      <li><a class="wiki_link" href="api-index.html">API Index</a></li>
+    </ul>
+    
+    
+    <a href="http://clojure.org" class="wiki_link">Clojure Home</a>
+  </div>
+</div>
+</div>
+      <div id="rightcolumn">
+	<div id="Content">
+	  <div class="contentBox"><div class="innerContentBox">
+              <div id="content_view" class="wiki wikiPage">
+                <div id="right-sidebar"><div id="toc">
+  <h1 class="nopad">Table of Contents</h1>
+  <div style="margin-left: 1em;" class="toc-section">
+    <a href="#toc0">Overview</a>
+    <div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/-&gt;Reader">-&gt;Reader</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/-&gt;Writer">-&gt;Writer</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/default-read-handlers">default-read-handlers</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/default-write-handlers">default-write-handlers</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/map-builder">map-builder</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/nsed-name">nsed-name</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/read">read</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/read-array-handler">read-array-handler</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/read-handler">read-handler</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/read-map-handler">read-map-handler</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/reader">reader</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/record-read-handler">record-read-handler</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/record-read-handlers">record-read-handlers</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/record-write-handler">record-write-handler</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/record-write-handlers">record-write-handlers</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/tagged-value">tagged-value</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/write">write</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/write-handler">write-handler</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/writer">writer</a>
+    </div>
+    <br />
+  </div>
+</div>
+</div>
+                <div id="content-tag"><h1 id="overview">API for <span id="namespace-name">cognitect.transit</span>
+  - <span id="header-project">com.cognitect:transit-clj</span> <span id="header-version"></span>
+  </h1>
+
+<br />Full namespace name: <span id="long-name">cognitect.transit</span>
+<p></p>
+<h2>Overview</h2>
+<pre id="namespace-docstr">An implementation of the transit-format for Clojure built
+on top of the transit-java library.</pre>
+
+
+<br />
+<h2>Public Variables and Functions</h2>
+<div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/-&gt;Reader">-&gt;Reader</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (-&gt;Reader r)
+</pre>
+  <pre id="var-docstr">Positional factory function for class cognitect.transit.Reader.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/-&gt;Writer">-&gt;Writer</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (-&gt;Writer w)
+</pre>
+  <pre id="var-docstr">Positional factory function for class cognitect.transit.Writer.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/default-read-handlers">default-read-handlers</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (default-read-handlers)
+</pre>
+  <pre id="var-docstr">Returns a map of default ReadHandlers for
+Clojure types. Java types are handled
+by the default ReadHandlers provided by the
+transit-java library.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/default-write-handlers">default-write-handlers</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (default-write-handlers)
+</pre>
+  <pre id="var-docstr">Returns a map of default WriteHandlers for
+Clojure types. Java types are handled
+by the default WriteHandlers provided by the
+transit-java library.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/map-builder">map-builder</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (map-builder)
+</pre>
+  <pre id="var-docstr">Creates a MapBuilder that makes Clojure-
+compatible maps.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/nsed-name">nsed-name</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (nsed-name kw-or-sym)
+</pre>
+  <pre id="var-docstr">Convert a keyword or symbol to a string in
+namespace/name format.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/read">read</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (read reader)
+</pre>
+  <pre id="var-docstr">Reads a value from a reader.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/read-array-handler">read-array-handler</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (read-array-handler from-rep array-reader)
+</pre>
+  <pre id="var-docstr">Creates a Transit ArrayReadHandler whose fromRep
+and arrayReader methods invoke the provided fns.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/read-handler">read-handler</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (read-handler from-rep)
+</pre>
+  <pre id="var-docstr">Creates a transit ReadHandler whose fromRep
+method invokes the provided fn.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/read-map-handler">read-map-handler</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (read-map-handler from-rep map-reader)
+</pre>
+  <pre id="var-docstr">Creates a Transit MapReadHandler whose fromRep
+and mapReader methods invoke the provided fns.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/reader">reader</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (reader in type)
+       (reader in type opts)
+</pre>
+  <pre id="var-docstr">Creates a reader over the provided source `in` using
+the specified format, one of: :msgpack, :json or :json-verbose.
+
+An optional opts map may be passed. Supported options are:
+
+:handlers - a map of tags to ReadHandler instances, they are merged
+with the Clojure default-read-handlers and then with the default ReadHandlers
+provided by transit-java.
+
+:default-handler - an instance of DefaultReadHandler, used to process
+transit encoded values for which there is no other ReadHandler; if
+:default-handler is not specified, non-readable values are returned
+as TaggedValues.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/record-read-handler">record-read-handler</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (record-read-handler type)
+</pre>
+  <pre id="var-docstr">Creates a ReadHandler for a record type</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/record-read-handlers">record-read-handlers</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (record-read-handlers &amp; types)
+</pre>
+  <pre id="var-docstr">Creates a map of record type tags to ReadHandlers</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/record-write-handler">record-write-handler</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (record-write-handler type)
+</pre>
+  <pre id="var-docstr">Creates a WriteHandler for a record type</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/record-write-handlers">record-write-handlers</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (record-write-handlers &amp; types)
+</pre>
+  <pre id="var-docstr">Creates a map of record types to WriteHandlers</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/tagged-value">tagged-value</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (tagged-value tag rep)
+</pre>
+  <pre id="var-docstr">Creates a TaggedValue object.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/write">write</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (write writer o)
+</pre>
+  <pre id="var-docstr">Writes a value to a transit writer.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/write-handler">write-handler</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (write-handler tag-fn rep-fn)
+       (write-handler tag-fn rep-fn str-rep-fn)
+       (write-handler tag-fn rep-fn str-rep-fn verbose-handler-fn)
+</pre>
+  <pre id="var-docstr">Creates a transit WriteHandler whose tag, rep,
+stringRep, and verboseWriteHandler methods
+invoke the provided fns.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/writer">writer</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (writer out type)
+       (writer out type opts)
+</pre>
+  <pre id="var-docstr">Creates a writer over the privided destination `out` using
+the specified format, one of: :msgpack, :json or :json-verbose.
+
+An optional opts map may be passed. Supported options are:
+
+:Handlers - a map of types to WriteHandler instances, they are merged
+with the default-handlers and then with the default handlers
+provided by transit-java.</pre>
+  
+  
+  
+</div>
+
+
+</div>
+              </div>
+            </div>
+          </div>
+	</div>
+	<div id="foot">
+	  <div style="text-align: center;" id="copyright">No copyright info </div>
+	</div>
+      </div>
+      <div id="DesignedBy">Logo &amp; site design by <a title="Visit Tom Hickey's website." href="http://www.tomhickey.com">Tom Hickey</a>.<br />
+      Clojure auto-documentation system by Tom Faulhaber.</div>
+    </div>
+    <!-- /AllContentContainer -->
+  </body>
+
+</html>
