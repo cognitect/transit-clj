@@ -16,13 +16,6 @@ _NOTE: Transit is a work in progress and may evolve based on feedback. As a resu
 * Latest release: 0.8.229
 * [All Released Versions](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22com.cognitect%22%20AND%20a%3A%22transit-clj%22)
 
-Download and local install:
-
-1. Follow the manual download steps for [transit-java](http://github.com/cognitect/transit-java)
-2. Download and unzip http://cdn.cognitect.com/transit/transit-clj-0.8.229.zip
-3. From the unzip directory: ```mvn install:install-file -DgroupId=com.cognitect -DartifactId=transit-clj -Dfile=transit-clj-0.8.229.jar -DpomFile=transit-clj-0.8.229.pom```
-
-
 [Maven](http://maven.apache.org/) dependency information:
 
 ```xml
@@ -33,15 +26,11 @@ Download and local install:
 </dependency>
 ```
 
-Note: Jar may not yet be available on Maven Central! If so, please download and install locally until it is available.
-
 [Leiningen](http://leiningen.org/) dependency information:
 
 ```clojure
 [com.cognitect/transit-clj "0.8.229"]
 ```
-
-Note: Jar may not yet be available on Maven Central! If so, please download and install locally until it is available.
 
 ## Usage
 
