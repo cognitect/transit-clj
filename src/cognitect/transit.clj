@@ -203,18 +203,20 @@
    (reify ArrayReadHandler
      (fromRep [_ o] o)
      (arrayReader [_]
-       (let [next-key (atom nil)]
+       (let [marker (Object.)
+             ^objects next-key (object-array [marker])]
          (reify ArrayReader
            (init [_] (transient {}))
            (init [_ ^int size] (transient {}))
            (add [_ m item]
-             (if-let [k @next-key]
-               (do
-                 (reset! next-key nil)
-                 (assoc! m k item))
-               (do
-                 (reset! next-key item)
-                 m)))
+             (let [k (aget next-key 0)]
+               (if (identical? k marker)
+                 (do
+                   (aset next-key 0 item)
+                   m)
+                 (do
+                   (aset next-key 0 marker)
+                   (assoc! m k item)))))
            (complete [_ m] (persistent! m))))))})
 
 (defn map-builder
@@ -331,6 +333,7 @@
   (write w {[:a :b] 2})
   (write w [123N])
   (write w 1/3)
+  (write w {false 10 [] 20})
 
   (def in (ByteArrayInputStream. (.toByteArray out)))
 
