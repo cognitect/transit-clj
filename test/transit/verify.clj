@@ -224,7 +224,7 @@
    :encoding encoding})
 
 (def extension {:json         ".json"
-                :json-verbose ".json-verbose"
+                :json-verbose ".verbose.json"
                 :msgpack      ".mp"})
 
 (defn exemplar-transit
