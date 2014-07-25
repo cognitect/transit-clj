@@ -1,0 +1,9 @@
+#!/bin/sh
+
+cd `dirname $0`/../..
+
+if [ ! -d "transit-format" ]; then
+  git clone git@github.com:cognitect/transit-format.git
+else
+  echo "transit-format exists"
+fi
