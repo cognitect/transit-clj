@@ -18,9 +18,8 @@
   (:refer-clojure :exclude [read])
   (:require [clojure.string :as str])
   (:import [com.cognitect.transit WriteHandler ReadHandler ArrayReadHandler MapReadHandler
-            ArrayReader TransitFactory TransitFactory$Format]
-           [com.cognitect.transit.impl ReaderSPI
-            MapBuilder ArrayBuilder]
+            ArrayReader TransitFactory TransitFactory$Format MapReader]
+           [com.cognitect.transit.SPI ReaderSPI]
            [java.io InputStream OutputStream]))
 
 ;; writing
@@ -48,20 +47,31 @@
     (str ns "/" (.getName kw-or-sym))
     (.getName kw-or-sym)))
 
+(defn- fn-or-val
+  [f]
+  (if (fn? f) f (constantly f)))
+
 (defn write-handler
   "Creates a transit WriteHandler whose tag, rep,
    stringRep, and verboseWriteHandler methods
-   invoke the provided fns."
+   invoke the provided fns.
+
+   If a non-fn is passed as an argument, implemented
+   handler method returns the value unaltered."
   ([tag-fn rep-fn]
      (write-handler tag-fn rep-fn nil nil))
   ([tag-fn rep-fn str-rep-fn]
      (write-handler tag-fn rep-fn str-rep-fn nil))
   ([tag-fn rep-fn str-rep-fn verbose-handler-fn]
-     (reify WriteHandler
-       (tag [_ o] (tag-fn o))
-       (rep [_ o] (rep-fn o))
-       (stringRep [_ o] (when str-rep-fn (str-rep-fn o)))
-       (getVerboseHandler [_] (when verbose-handler-fn (verbose-handler-fn))))))
+     (let [tag-fn (fn-or-val tag-fn)
+           rep-fn (fn-or-val rep-fn)
+           str-rep-fn (fn-or-val str-rep-fn)
+           verbose-handler-fn (fn-or-val verbose-handler-fn)]
+       (reify WriteHandler
+         (tag [_ o] (tag-fn o))
+         (rep [_ o] (rep-fn o))
+         (stringRep [_ o] (when str-rep-fn (str-rep-fn o)))
+         (getVerboseHandler [_] (when verbose-handler-fn (verbose-handler-fn)))))))
 
 (defn default-write-handlers
   "Returns a map of default WriteHandlers for
@@ -223,21 +233,21 @@
   "Creates a MapBuilder that makes Clojure-
    compatible maps."
   []
-  (reify MapBuilder
+  (reify MapReader
     (init [_] (transient {}))
     (init [_ ^int size] (transient {}))
     (add [_ m k v] (assoc! m k v))
-    (^java.util.Map complete [_ m] (persistent! m))))
+    (complete [_ m] (persistent! m))))
 
-(defn array-builder
+(defn list-builder
   []
   "Creates an ArrayBuilder that makes Clojure-
    compatible lists."
-  (reify ArrayBuilder
+  (reify ArrayReader
     (init [_] (transient []))
     (init [_ ^int size] (transient []))
     (add [_ v item] (conj! v item))
-    (^java.util.List complete [_ v] (persistent! v))))
+    (complete [_ v] (persistent! v))))
 
 (deftype Reader [r])
 
@@ -266,7 +276,7 @@
                                            default-handler)]
          (Reader. (.setBuilders ^ReaderSPI reader
                                 (map-builder)
-                                (array-builder))))
+                                (list-builder))))
        (throw (ex-info "Type must be :json, :json-verbose or :msgpack" {:type type})))))
 
 (defn read
@@ -352,13 +362,9 @@
 
   (def ext-write-handlers
     {Point
-     (write-handler (constantly "point")
-                    (fn [p] [(.x p) (.y p)])
-                    (constantly nil))
+     (write-handler "point" (fn [p] [(.x p) (.y p)]))
      Circle
-     (write-handler (constantly "circle")
-                    (fn [c] [(.c c) (.r c)])
-                    (constantly nil))})
+     (write-handler "circle" (fn [c] [(.c c) (.r c)]))})
 
   (def ext-read-handlers
     {"point"
