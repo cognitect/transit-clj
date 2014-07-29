@@ -1,9 +1,0 @@
-#!/bin/sh
-
-cd `dirname $0`/../..
-
-if [ ! -d "transit" ]; then
-  git clone git@github.com:cognitect/transit.git
-else
-  echo "transit exists"
-fi

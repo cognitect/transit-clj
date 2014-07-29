@@ -1,10 +1,28 @@
 #!/bin/bash
 
+set -e
+
 cd `dirname $0`/..
 
-ARGS="$@"
+XMS=-Xms1g
+XMX=-Xmx1g
 
-bin/get-transit
+while [ $# -gt 0 ]
+do
+    case "$1" in
+        -Xmx*)
+            XMX=$1
+            ;;
+        -Xms*)
+            XMS=$1
+            ;;
+        *)
+            ARGS="$ARGS $1"
+    esac
+    shift
+done
+
+bin/get-transit-format
 
 if [ -z "$ARGS" ] || [[ $ARGS == *java* ]]; then
   bin/get-transit-java
@@ -26,6 +44,5 @@ if [ -z "$ARGS" ] || [[ $ARGS == *python* ]]; then
   bin/get-transit-python
 fi
 
-
-exec java -server -Xms1g -Xmx1g -cp `bin/classpath`:`pwd`/test clojure.main -m transit.verify "$@"
+exec java -server $XMS $XMX -cp `bin/classpath`:`pwd`/test clojure.main -m transit.verify $ARGS
 

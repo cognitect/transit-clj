@@ -124,7 +124,7 @@
 
    An optional opts map may be passed. Supported options are:
 
-   :Handlers - a map of types to WriteHandler instances, they are merged
+   :handlers - a map of types to WriteHandler instances, they are merged
    with the default-handlers and then with the default handlers
    provided by transit-java."
   ([out type] (writer out type {}))
