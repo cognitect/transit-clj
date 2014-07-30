@@ -324,7 +324,10 @@ as TaggedValues.</pre>
 </pre>
   <pre id="var-docstr">Creates a transit WriteHandler whose tag, rep,
 stringRep, and verboseWriteHandler methods
-invoke the provided fns.</pre>
+invoke the provided fns.
+
+If a non-fn is passed as an argument, implemented
+handler method returns the value unaltered.</pre>
   
   
   
@@ -341,7 +344,7 @@ the specified format, one of: :msgpack, :json or :json-verbose.
 
 An optional opts map may be passed. Supported options are:
 
-:Handlers - a map of types to WriteHandler instances, they are merged
+:handlers - a map of types to WriteHandler instances, they are merged
 with the default-handlers and then with the default handlers
 provided by transit-java.</pre>
   
