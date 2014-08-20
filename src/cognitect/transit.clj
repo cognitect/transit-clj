@@ -20,7 +20,8 @@
   (:import [com.cognitect.transit WriteHandler ReadHandler ArrayReadHandler MapReadHandler
             ArrayReader TransitFactory TransitFactory$Format MapReader]
            [com.cognitect.transit.SPI ReaderSPI]
-           [java.io InputStream OutputStream]))
+           [java.io InputStream OutputStream]
+           [clojure.lang Compiler]))
 
 ;; writing
 
@@ -303,7 +304,7 @@
 (defn record-read-handler
   "Creates a ReadHandler for a record type"
   [^Class type]
-  (let [type-name (str/split (.getName type) #"\.")
+  (let [type-name (str/split (Compiler/demunge (.getName type)) #"\.")
         map-ctor (-> (str (str/join "." (butlast type-name)) "/map->" (last type-name))
                      symbol
                      resolve)]
