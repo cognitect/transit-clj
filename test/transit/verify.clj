@@ -52,6 +52,16 @@
   "Timeout for roundtrip requests to native implementation"
   10000)
 
+(def reader-options
+  "Options for test readers."
+  {:handlers (t/record-read-handlers transit.corner_cases.Point
+                                     transit.corner_cases.Circle)})
+
+(def writer-options
+  "Options for test writers."
+  {:handlers (t/record-write-handlers transit.corner_cases.Point
+                                      transit.corner_cases.Circle)})
+
 (defn read-bytes
   "Read the contents of the passed file into a byte array and return
   the byte array."
@@ -74,7 +84,7 @@
   encoded value of the object."
   [o encoding]
   (let [out (ByteArrayOutputStream.)
-        w (t/writer out encoding)]
+        w (t/writer out encoding writer-options)]
     (t/write w o)
     (.toByteArray out)))
 
@@ -84,7 +94,7 @@
   [bytes encoding]
   (try
     (let [in (ByteArrayInputStream. bytes)
-          r (t/reader in encoding)]
+          r (t/reader in encoding reader-options)]
       (t/read r))
     (catch Throwable e
       (println ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" encoding)
@@ -107,7 +117,7 @@
         in (BufferedInputStream. (.getInputStream p))]
     ;; for JSON, t/reader does not return until data starts to flow
     ;; over input stream
-    {:out out :p p :reader (future (t/reader in encoding))}))
+    {:out out :p p :reader (future (t/reader in encoding reader-options))}))
 
 (defn stop-process
   "Given a process, stop the process started by
@@ -259,6 +269,11 @@
               :desc "JSON transit corner case"
               :input (mapv #(transit->test-input (.getBytes %) encoding) cc/transit-json)
               :test-name :corner-case-transit-json
+              :test #(test-each proc %)}
+             {:pred (constantly true)
+              :desc "Record round-trip"
+              :input (mapv #(edn->test-input % encoding) cc/record-forms)
+              :test-name :corner-case-records
               :test #(test-each proc %)}
              {:pred (fn [_ _ o] (:gen o))
               :desc "generated EDN"
