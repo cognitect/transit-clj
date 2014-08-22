@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -e
+
+cd `dirname $0`/..
+
+XMS=-Xms1g
+XMX=-Xmx1g
+
+while [ $# -gt 0 ]
+do
+    case "$1" in
+        -Xmx*)
+            XMX=$1
+            ;;
+        -Xms*)
+            XMS=$1
+            ;;
+        *)
+            ARGS="$ARGS $1"
+    esac
+    shift
+done
+
+if [ -z "$ARGS" ]; then
+    ARGS=10000
+fi
+
+exec java -server $XMS $XMX -cp `bin/classpath` clojure.main -m transit.check-transit $ARGS
+
