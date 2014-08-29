@@ -303,7 +303,7 @@
 (defn record-read-handler
   "Creates a ReadHandler for a record type"
   [^Class type]
-  (let [type-name (str/split (.getName type) #"\.")
+  (let [type-name (map #(str/replace % "_" "-") (str/split (.getName type) #"\."))
         map-ctor (-> (str (str/join "." (butlast type-name)) "/map->" (last type-name))
                      symbol
                      resolve)]
