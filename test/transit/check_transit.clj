@@ -17,7 +17,8 @@
             [clojure.test.check :as tc]
             [clojure.test.check.properties :as prop]
             [clojure.test.check.generators :as gen]
-            [transit.verify :as verify])
+            [transit.verify :as verify]
+            [clojure.string :as str])
   (:import [java.io ByteArrayOutputStream ByteArrayInputStream]))
 
 (defn roundtrip [encoding]
@@ -29,7 +30,29 @@
                       reader (transit/reader in encoding)]
                   (= value (transit/read reader)))))
 
-(defn run-test [n property]
+(def record-name (gen/elements ["Foo" "Bar" "Baz"]))
+(def ns-segments (gen/elements ["foo" "bar" "baz" "x" "y" "z" "a-b"]))
+
+(def record-sym (gen/fmap (fn [[segs name]]
+                            (symbol (if (empty? segs)
+                                      name
+                                      (str (str/join "." segs) "/" name))))
+                          (gen/tuple (gen/vector ns-segments) record-name)))
+
+(defn record-read-handler-returns-read-handler []
+  (prop/for-all [sym transit.check-transit/record-sym]
+    (let [ns-name (namespace sym)
+          ns-sym (if ns-name (symbol ns-name) 'user)
+          record-sym (symbol (name sym))]
+      (binding [*ns* *ns*]
+        (eval `(do (ns ~ns-sym)
+                   (defrecord ~record-sym [a#])
+                   (let [handler# (transit/record-read-handler
+                                   (resolve (symbol (Compiler/munge (str '~ns-sym "." '~record-sym)))))]
+                     (.fromRep handler# {:a 1}))))))))
+
+(defn run-test [n property test-desc]
+  (println "check:" test-desc)
   (let [result (tc/quick-check n property :max-size 50)
         color (if (:result result) :green :red)]
     (println (verify/with-style color (pr-str result)))))
@@ -37,6 +60,8 @@
 (defn -main [& args]
   (binding [verify/*style* true]
     (let [n (Long/parseLong (first args))]
+      (run-test 100 (record-read-handler-returns-read-handler)
+                "record-read-handler returns ReadHandler")
       (doseq [t [:json :json-verbose :msgpack]]
-        (println (format "check %s encoding..." (name t)))
-        (run-test n (roundtrip t))))))
+        (run-test n (roundtrip t)
+                  (format "%s encoding..." (name t)))))))
