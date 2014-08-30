@@ -281,7 +281,15 @@
       dir
       "vector_unrecognized_vals"
       "Vector with vals with unrecognized encodings"
-      ["~Unrecognized"])))
+      ["~Unrecognized"])
+
+    (write-exemplar
+     dir
+     "vector_special_numbers"
+     "Vector with special numbers"
+     [java.lang.Double/NaN
+      java.lang.Double/POSITIVE_INFINITY
+      java.lang.Double/NEGATIVE_INFINITY])))
 
 (defn -main [& args]
  (write-exemplars "simple-examples"))
