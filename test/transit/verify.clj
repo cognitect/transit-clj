@@ -144,10 +144,29 @@
       (throw (ex-info "Response timeout" {:status :timeout}))
       result)))
 
+(defn special-number? [node]
+  (and (number? node)
+       (or (.equals node Double/NaN)
+           (.equals node Double/POSITIVE_INFINITY)
+           (.equals node Double/NEGATIVE_INFINITY))))
+
+(def special-number-symbols
+  {:NaN (gensym)
+   :Infinity (gensym)
+   :-Infinity (gensym)})
+
+(defn replace-special-number [number]
+  (special-number-symbols
+   (cond (.equals number Double/NaN) :Nan
+         (.equals number Double/POSITIVE_INFINITY) :Infinity
+         (.equals number Double/NEGATIVE_INFINITY) :-Infinity)))
+
 (defn equalize [data]
   (walk/prewalk (fn [node]
                   (cond (and (number? node)
-                             (not (ratio? node)))             (.stripTrailingZeros (bigdec node))
+                             (not (ratio? node))
+                             (not (special-number? node)))    (.stripTrailingZeros (bigdec node))
+                        (special-number? node)                (replace-special-number node)
                         (instance? java.util.Map$Entry node)  node
                         (sequential? node)                    (seq node)
                         (instance? Character node)            (str node)
