@@ -32,6 +32,10 @@ if [ -z "$ARGS" ] || [[ $ARGS == *ruby* ]]; then
   bin/get-transit-ruby
 fi
 
+if [ -z "$ARGS" ] || [[ $ARGS == *jruby* ]]; then
+  bin/get-transit-jruby
+fi
+
 if [ -z "$ARGS" ] || [[ $ARGS == *js* ]]; then
   bin/get-transit-js
 fi
