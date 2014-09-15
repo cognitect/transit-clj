@@ -1,8 +1,0 @@
-#!/bin/sh
-
-echo "Generating exemplar files into ./simple-examples"
-
-rm -rf simple-examples
-mkdir simple-examples
-
-java -server -Xms1g -Xmx1g -cp `pwd`/test:`bin/classpath` clojure.main -i test/exemplar.clj -m transit.exemplar

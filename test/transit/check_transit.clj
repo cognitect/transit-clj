@@ -17,9 +17,21 @@
             [clojure.test.check :as tc]
             [clojure.test.check.properties :as prop]
             [clojure.test.check.generators :as gen]
-            [transit.verify :as verify]
             [clojure.string :as str])
   (:import [java.io ByteArrayOutputStream ByteArrayInputStream]))
+
+(def ^:dynamic *style* false)
+
+(def styles {:reset "[0m"
+             :red "[31m"
+             :green "[32m"
+             :bright "[1m"})
+
+(defn with-style [style & strs]
+  (let [s (apply str (interpose " " strs))]
+    (if (and *style* (not= style :none))
+      (str \u001b (style styles) s \u001b (:reset styles))
+      s)))
 
 (defn roundtrip [encoding]
   (prop/for-all [value gen/any-printable]
@@ -55,10 +67,10 @@
   (println "check:" test-desc)
   (let [result (tc/quick-check n property :max-size 50)
         color (if (:result result) :green :red)]
-    (println (verify/with-style color (pr-str result)))))
+    (println (with-style color (pr-str result)))))
 
 (defn -main [& args]
-  (binding [verify/*style* true]
+  (binding [*style* true]
     (let [n (Long/parseLong (first args))]
       (run-test 100 (record-read-handler-returns-read-handler)
                 "record-read-handler returns ReadHandler")
