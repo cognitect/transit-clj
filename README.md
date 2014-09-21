@@ -22,14 +22,14 @@ _NOTE: Transit is a work in progress and may evolve based on feedback. As a resu
 <dependency>
   <groupId>com.cognitect</groupId>
   <artifactId>transit-clj</artifactId>
-  <version>0.8.255</version>
+  <version>0.8.259</version>
 </dependency>
 ```
 
 [Leiningen](http://leiningen.org/) dependency information:
 
 ```clojure
-[com.cognitect/transit-clj "0.8.255"]
+[com.cognitect/transit-clj "0.8.259"]
 ```
 
 ## Usage
