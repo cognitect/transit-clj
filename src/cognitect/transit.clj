@@ -119,7 +119,7 @@
 (deftype Writer [w])
 
 (defn writer
-  "Creates a writer over the privided destination `out` using
+  "Creates a writer over the provided destination `out` using
    the specified format, one of: :msgpack, :json or :json-verbose.
 
    An optional opts map may be passed. Supported options are:
