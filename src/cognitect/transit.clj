@@ -240,9 +240,9 @@
     (complete [_ m] (persistent! m))))
 
 (defn list-builder
-  []
   "Creates an ArrayBuilder that makes Clojure-
    compatible lists."
+  []
   (reify ArrayReader
     (init [_] (transient []))
     (init [_ ^int size] (transient []))
