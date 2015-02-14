@@ -69,7 +69,7 @@ _NOTE: Transit is a work in progress and may evolve based on feedback. As a resu
 |big decimal|java.math.BigDecimal|java.math.BigDecimal|
 |big integer|clojure.lang.BigInt,java.math.BigInteger|clojure.lang.BigInt|
 |time|java.util.Date|java.util.Date|
-|uri|java.net.URI|java.net.URI|
+|uri|java.net.URI|com.cognitect.transit.URI|
 |uuid|java.util.UUID|java.util.UUID|
 |char|java.lang.Character|java.lang.Character|
 |array|clojure.lang.IPersistentVector, java.util.List|clojure.lang.IPersistentVector|
