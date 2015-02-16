@@ -191,6 +191,7 @@
       <groupId>org.clojure</groupId>
       <artifactId>test.check</artifactId>
       <version>0.5.9</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
