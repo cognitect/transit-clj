@@ -52,6 +52,18 @@
    :wiki-url
    "/cognitect.transit-api.html#cognitect.transit/default-write-handlers"}
   {:raw-source-url nil,
+   :name "list-builder",
+   :file "src/cognitect/transit.clj",
+   :source-url nil,
+   :line 242,
+   :var-type "function",
+   :arglists ([]),
+   :doc
+   "Creates an ArrayBuilder that makes Clojure-\ncompatible lists.",
+   :namespace "cognitect.transit",
+   :wiki-url
+   "/cognitect.transit-api.html#cognitect.transit/list-builder"}
+  {:raw-source-url nil,
    :name "map-builder",
    :file "src/cognitect/transit.clj",
    :source-url nil,
@@ -218,6 +230,6 @@
    :var-type "function",
    :arglists ([out type] [out type opts]),
    :doc
-   "Creates a writer over the privided destination `out` using\nthe specified format, one of: :msgpack, :json or :json-verbose.\n\nAn optional opts map may be passed. Supported options are:\n\n:handlers - a map of types to WriteHandler instances, they are merged\nwith the default-handlers and then with the default handlers\nprovided by transit-java.",
+   "Creates a writer over the provided destination `out` using\nthe specified format, one of: :msgpack, :json or :json-verbose.\n\nAn optional opts map may be passed. Supported options are:\n\n:handlers - a map of types to WriteHandler instances, they are merged\nwith the default-handlers and then with the default handlers\nprovided by transit-java.",
    :namespace "cognitect.transit",
    :wiki-url "/cognitect.transit-api.html#cognitect.transit/writer"})}

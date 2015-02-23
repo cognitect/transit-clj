@@ -55,6 +55,8 @@ namespace.
     </div><div style="margin-left: 1em;" class="toc-entry">
       <a href="#cognitect.transit/default-write-handlers">default-write-handlers</a>
     </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/list-builder">list-builder</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
       <a href="#cognitect.transit/map-builder">map-builder</a>
     </div><div style="margin-left: 1em;" class="toc-entry">
       <a href="#cognitect.transit/nsed-name">nsed-name</a>
@@ -149,6 +151,18 @@ transit-java library.</pre>
 Clojure types. Java types are handled
 by the default WriteHandlers provided by the
 transit-java library.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/list-builder">list-builder</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (list-builder)
+</pre>
+  <pre id="var-docstr">Creates an ArrayBuilder that makes Clojure-
+compatible lists.</pre>
   
   
   
@@ -339,7 +353,7 @@ handler method returns the value unaltered.</pre>
   <pre id="var-usage">Usage: (writer out type)
        (writer out type opts)
 </pre>
-  <pre id="var-docstr">Creates a writer over the privided destination `out` using
+  <pre id="var-docstr">Creates a writer over the provided destination `out` using
 the specified format, one of: :msgpack, :json or :json-verbose.
 
 An optional opts map may be passed. Supported options are:
