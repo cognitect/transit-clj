@@ -24,7 +24,7 @@ git push origin v${version}
 
 echo "Updating README.md versions"
 sed -i '' "s/[[:digit:]]\{1,2\}\.[[:digit:]]\{1,2\}\.[[:digit:]]\{2,4\}/${version}/g" README.md
-git ci -m "Update README.md with ${version}" README.md
+git commit -m "Update README.md with ${version}" README.md
 git push 
 
 echo "Updating gh-pages with new api docs"
