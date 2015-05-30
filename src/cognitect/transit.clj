@@ -29,7 +29,7 @@
 (defn- transit-format
   "Converts a keyword to a TransitFactory$Format value."
   [kw]
-  (TransitFactory$Format/valueOf 
+  (TransitFactory$Format/valueOf
    (str/join "_" (-> kw
                      name
                      str/upper-case
@@ -73,52 +73,47 @@
          (stringRep [_ o] (when str-rep-fn (str-rep-fn o)))
          (getVerboseHandler [_] (when verbose-handler-fn (verbose-handler-fn)))))))
 
-(def default-write-handlers*
-  (delay
-   {
-    java.util.List
-    (reify WriteHandler
-      (tag [_ l] (if (seq? l) "list" "array"))
-      (rep [_ l] (if (seq? l) (TransitFactory/taggedValue "array" l ) l))
-      (stringRep [_ _] nil)
-      (getVerboseHandler [_] nil))
-
-    clojure.lang.BigInt
-    (reify WriteHandler
-      (tag [_ _] "n")
-      (rep [_ bi] (str (biginteger bi)))
-      (stringRep [this bi] (.rep this bi))
-      (getVerboseHandler [_] nil))
-
-    clojure.lang.Keyword
-    (reify WriteHandler
-      (tag [_ _] ":")
-      (rep [_ kw] (nsed-name kw))
-      (stringRep [_ kw] (nsed-name kw))
-      (getVerboseHandler [_] nil))
-
-    clojure.lang.Ratio
-    (reify WriteHandler
-      (tag [_ _] "ratio")
-      (rep [_ r] (TransitFactory/taggedValue "array" [(numerator r) (denominator r)]))
-      (stringRep [_ _] nil)
-      (getVerboseHandler [_] nil))
-
-    clojure.lang.Symbol
-    (reify WriteHandler
-      (tag [_ _] "$")
-      (rep [_ sym] (nsed-name sym))
-      (stringRep [_ sym] (nsed-name sym))
-      (getVerboseHandler [_] nil))
-}))
-
-(defn default-write-handlers
+(def default-write-handlers
   "Returns a map of default WriteHandlers for
    Clojure types. Java types are handled
    by the default WriteHandlers provided by the
    transit-java library."
-  []
-  @default-write-handlers*)
+  {
+   java.util.List
+   (reify WriteHandler
+     (tag [_ l] (if (seq? l) "list" "array"))
+     (rep [_ l] (if (seq? l) (TransitFactory/taggedValue "array" l ) l))
+     (stringRep [_ _] nil)
+     (getVerboseHandler [_] nil))
+
+   clojure.lang.BigInt
+   (reify WriteHandler
+     (tag [_ _] "n")
+     (rep [_ bi] (str (biginteger bi)))
+     (stringRep [this bi] (.rep this bi))
+     (getVerboseHandler [_] nil))
+
+   clojure.lang.Keyword
+   (reify WriteHandler
+     (tag [_ _] ":")
+     (rep [_ kw] (nsed-name kw))
+     (stringRep [_ kw] (nsed-name kw))
+     (getVerboseHandler [_] nil))
+
+   clojure.lang.Ratio
+   (reify WriteHandler
+     (tag [_ _] "ratio")
+     (rep [_ r] (TransitFactory/taggedValue "array" [(numerator r) (denominator r)]))
+     (stringRep [_ _] nil)
+     (getVerboseHandler [_] nil))
+
+   clojure.lang.Symbol
+   (reify WriteHandler
+     (tag [_ _] "$")
+     (rep [_ sym] (nsed-name sym))
+     (stringRep [_ sym] (nsed-name sym))
+     (getVerboseHandler [_] nil))
+   })
 
 (deftype Writer [w])
 
@@ -134,7 +129,7 @@
   ([out type] (writer out type {}))
   ([^OutputStream out type opts]
      (if (#{:json :json-verbose :msgpack} type)
-       (let [handlers (merge (default-write-handlers) (:handlers opts))]
+       (let [handlers (merge default-write-handlers (:handlers opts))]
          (Writer. (TransitFactory/writer (transit-format type) out handlers)))
        (throw (ex-info "Type must be :json, :json-verbose or :msgpack" {:type type})))))
 
@@ -169,9 +164,13 @@
     (fromRep [_ o] (from-rep o))
     (arrayReader [_] (array-reader))))
 
-(def default-read-handlers*
-  (delay
-     {":"
+
+(def default-read-handlers
+  "Returns a map of default ReadHandlers for
+   Clojure types. Java types are handled
+   by the default ReadHandlers provided by the
+   transit-java library."
+  {":"
    (reify ReadHandler
      (fromRep [_ o] (keyword o)))
 
@@ -228,15 +227,7 @@
                    (aset next-key 0 marker)
                    (assoc! m k item)))))
            (complete [_ m] (persistent! m))))))
-}))
-
-(defn default-read-handlers
-  "Returns a map of default ReadHandlers for
-   Clojure types. Java types are handled
-   by the default ReadHandlers provided by the
-   transit-java library."
-  []
-  @default-read-handlers*)
+   })
 
 (defn map-builder
   "Creates a MapBuilder that makes Clojure-
@@ -277,7 +268,7 @@
   ([in type] (reader in type {}))
   ([^InputStream in type opts]
      (if (#{:json :json-verbose :msgpack} type)
-       (let [handlers (merge (default-read-handlers) (:handlers opts))
+       (let [handlers (merge default-read-handlers (:handlers opts))
              default-handler (:default-handler opts)
              reader (TransitFactory/reader (transit-format type)
                                            in
