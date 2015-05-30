@@ -20,37 +20,35 @@
    :name "->Writer",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 119,
+   :line 118,
    :var-type "function",
    :arglists ([w]),
    :doc
    "Positional factory function for class cognitect.transit.Writer.",
    :namespace "cognitect.transit",
    :wiki-url "/cognitect.transit-api.html#cognitect.transit/->Writer"}
-  {:raw-source-url nil,
-   :name "default-read-handlers",
-   :file "src/cognitect/transit.clj",
+  {:file "src/cognitect/transit.clj",
+   :raw-source-url nil,
    :source-url nil,
+   :wiki-url
+   "/cognitect.transit-api.html#cognitect.transit/default-read-handlers",
+   :namespace "cognitect.transit",
    :line 168,
-   :var-type "function",
-   :arglists ([]),
+   :var-type "var",
    :doc
    "Returns a map of default ReadHandlers for\nClojure types. Java types are handled\nby the default ReadHandlers provided by the\ntransit-java library.",
-   :namespace "cognitect.transit",
-   :wiki-url
-   "/cognitect.transit-api.html#cognitect.transit/default-read-handlers"}
-  {:raw-source-url nil,
-   :name "default-write-handlers",
-   :file "src/cognitect/transit.clj",
+   :name "default-read-handlers"}
+  {:file "src/cognitect/transit.clj",
+   :raw-source-url nil,
    :source-url nil,
+   :wiki-url
+   "/cognitect.transit-api.html#cognitect.transit/default-write-handlers",
+   :namespace "cognitect.transit",
    :line 76,
-   :var-type "function",
-   :arglists ([]),
+   :var-type "var",
    :doc
    "Returns a map of default WriteHandlers for\nClojure types. Java types are handled\nby the default WriteHandlers provided by the\ntransit-java library.",
-   :namespace "cognitect.transit",
-   :wiki-url
-   "/cognitect.transit-api.html#cognitect.transit/default-write-handlers"}
+   :name "default-write-handlers"}
   {:raw-source-url nil,
    :name "list-builder",
    :file "src/cognitect/transit.clj",
@@ -99,7 +97,7 @@
    :name "read-array-handler",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 160,
+   :line 159,
    :var-type "function",
    :arglists ([from-rep array-reader]),
    :doc
@@ -111,7 +109,7 @@
    :name "read-handler",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 145,
+   :line 144,
    :var-type "function",
    :arglists ([from-rep]),
    :doc
@@ -123,7 +121,7 @@
    :name "read-map-handler",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 152,
+   :line 151,
    :var-type "function",
    :arglists ([from-rep map-reader]),
    :doc
@@ -201,7 +199,7 @@
    :name "write",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 137,
+   :line 136,
    :var-type "function",
    :arglists ([writer o]),
    :doc "Writes a value to a transit writer.",
@@ -226,7 +224,7 @@
    :name "writer",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 121,
+   :line 120,
    :var-type "function",
    :arglists ([out type] [out type opts]),
    :doc
