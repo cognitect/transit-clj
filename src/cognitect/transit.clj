@@ -317,6 +317,14 @@
           {}
           types))
 
+(defn read-handler-map
+  [custom-handlers]
+  (TransitFactory/readHandlerMap custom-handlers))
+
+(defn write-handler-map
+  [custom-handlers]
+  (TransitFactory/writeHandlerMap custom-handlers))
+
 (comment
 
   (require 'cognitect.transit)
@@ -328,7 +336,6 @@
 
   (def w (writer out :json))
   (def w (writer out :json-verbose))
-
   (def w (writer out :msgpack))
 
   (write w "foo")
@@ -386,5 +393,19 @@
 
   (def in (ByteArrayInputStream. (.toByteArray out)))
   (def r (reader in :json {:handlers ext-read-handlers}))
+  (read r)
+
+  ;; write and read handler maps
+
+  (def custom-write-handler-map (write-handler-map ext-write-handlers))
+  (def custom-read-handler-map (read-handler-map ext-read-handlers))
+
+  (def out (ByteArrayOutputStream. 2000))
+  (def w (writer out :json {:handlers custom-write-handler-map}))
+
+  (write w (Point. 10 20))
+
+  (def in (ByteArrayInputStream. (.toByteArray out)))
+  (def r (reader in :json {:handlers custom-read-handler-map}))
   (read r)
   )
