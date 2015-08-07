@@ -19,6 +19,7 @@
   (:require [clojure.string :as str])
   (:import [com.cognitect.transit WriteHandler ReadHandler ArrayReadHandler MapReadHandler
             ArrayReader TransitFactory TransitFactory$Format MapReader]
+           [com.cognitect.transit.impl ReadHandlerMap WriteHandlerMap]
            [com.cognitect.transit.SPI ReaderSPI]
            [java.io InputStream OutputStream]))
 
@@ -127,10 +128,10 @@
    with the default-handlers and then with the default handlers
    provided by transit-java."
   ([out type] (writer out type {}))
-  ([^OutputStream out type opts]
+  ([^OutputStream out type {:keys [handlers]}]
      (if (#{:json :json-verbose :msgpack} type)
-       (let [handlers (merge default-write-handlers (:handlers opts))]
-         (Writer. (TransitFactory/writer (transit-format type) out handlers)))
+       (let [handler-map (if (instance? WriteHandlerMap handlers) handlers (merge default-write-handlers handlers))]
+         (Writer. (TransitFactory/writer (transit-format type) out handler-map)))
        (throw (ex-info "Type must be :json, :json-verbose or :msgpack" {:type type})))))
 
 (defn write
@@ -266,13 +267,12 @@
    :default-handler is not specified, non-readable values are returned
    as TaggedValues."
   ([in type] (reader in type {}))
-  ([^InputStream in type opts]
+  ([^InputStream in type {:keys [handlers default-handler]}]
      (if (#{:json :json-verbose :msgpack} type)
-       (let [handlers (merge default-read-handlers (:handlers opts))
-             default-handler (:default-handler opts)
+       (let [handler-map (if (instance? ReadHandlerMap handlers) handlers (merge default-read-handlers handlers))
              reader (TransitFactory/reader (transit-format type)
                                            in
-                                           handlers
+                                           handler-map
                                            default-handler)]
          (Reader. (.setBuilders ^ReaderSPI reader
                                 (map-builder)
@@ -319,11 +319,11 @@
 
 (defn read-handler-map
   [custom-handlers]
-  (TransitFactory/readHandlerMap custom-handlers))
+  (TransitFactory/readHandlerMap (merge default-read-handlers custom-handlers)))
 
 (defn write-handler-map
   [custom-handlers]
-  (TransitFactory/writeHandlerMap custom-handlers))
+  (TransitFactory/writeHandlerMap (merge default-write-handlers custom-handlers)))
 
 (comment
 
