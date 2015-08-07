@@ -23,6 +23,13 @@
            [com.cognitect.transit.SPI ReaderSPI]
            [java.io InputStream OutputStream]))
 
+(defprotocol HandlerMapProvider
+  (handler-map [this]))
+
+(deftype HandlerMapContainer [m]
+  HandlerMapProvider
+  (handler-map [this] m))
+
 ;; writing
 
 (set! *warn-on-reflection* true)
@@ -130,7 +137,9 @@
   ([out type] (writer out type {}))
   ([^OutputStream out type {:keys [handlers]}]
      (if (#{:json :json-verbose :msgpack} type)
-       (let [handler-map (if (instance? WriteHandlerMap handlers) handlers (merge default-write-handlers handlers))]
+       (let [handler-map (if (instance? HandlerMapContainer handlers)
+                           (handler-map handlers)
+                           (merge default-write-handlers handlers))]
          (Writer. (TransitFactory/writer (transit-format type) out handler-map)))
        (throw (ex-info "Type must be :json, :json-verbose or :msgpack" {:type type})))))
 
@@ -269,7 +278,9 @@
   ([in type] (reader in type {}))
   ([^InputStream in type {:keys [handlers default-handler]}]
      (if (#{:json :json-verbose :msgpack} type)
-       (let [handler-map (if (instance? ReadHandlerMap handlers) handlers (merge default-read-handlers handlers))
+       (let [handler-map (if (instance? HandlerMapContainer handlers)
+                           (handler-map handlers)
+                           (merge default-read-handlers handlers))
              reader (TransitFactory/reader (transit-format type)
                                            in
                                            handler-map
@@ -318,12 +329,26 @@
           types))
 
 (defn read-handler-map
+  "Returns a HandlerMapContainer containing a ReadHandlerMap
+  containing all the default handlers for Clojure and Java and any
+  custom handlers that you supply, letting you store the return value
+  and pass it to multiple invocations of reader.  This can be more
+  efficient than repeatedly handing the same raw map of tags -> custom
+  handlers to reader."
   [custom-handlers]
-  (TransitFactory/readHandlerMap (merge default-read-handlers custom-handlers)))
+  (HandlerMapContainer.
+   (TransitFactory/readHandlerMap (merge default-read-handlers custom-handlers))))
 
 (defn write-handler-map
+  "Returns a HandlerMapContainer containing a WriteHandlerMap
+  containing all the default handlers for Clojure and Java and any
+  custom handlers that you supply, letting you store the return value
+  and pass it to multiple invocations of writer.  This can be more
+  efficient than repeatedly handing the same raw map of types -> custom
+  handlers to writer."
   [custom-handlers]
-  (TransitFactory/writeHandlerMap (merge default-write-handlers custom-handlers)))
+  (HandlerMapContainer.
+   (TransitFactory/writeHandlerMap (merge default-write-handlers custom-handlers))))
 
 (comment
 
