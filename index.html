@@ -47,6 +47,8 @@ namespace.
   <div style="margin-left: 1em;" class="toc-section">
     <a href="#toc0">Overview</a>
     <div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/-&gt;HandlerMapContainer">-&gt;HandlerMapContainer</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
       <a href="#cognitect.transit/-&gt;Reader">-&gt;Reader</a>
     </div><div style="margin-left: 1em;" class="toc-entry">
       <a href="#cognitect.transit/-&gt;Writer">-&gt;Writer</a>
@@ -67,6 +69,8 @@ namespace.
     </div><div style="margin-left: 1em;" class="toc-entry">
       <a href="#cognitect.transit/read-handler">read-handler</a>
     </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/read-handler-map">read-handler-map</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
       <a href="#cognitect.transit/read-map-handler">read-map-handler</a>
     </div><div style="margin-left: 1em;" class="toc-entry">
       <a href="#cognitect.transit/reader">reader</a>
@@ -84,6 +88,8 @@ namespace.
       <a href="#cognitect.transit/write">write</a>
     </div><div style="margin-left: 1em;" class="toc-entry">
       <a href="#cognitect.transit/write-handler">write-handler</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/write-handler-map">write-handler-map</a>
     </div><div style="margin-left: 1em;" class="toc-entry">
       <a href="#cognitect.transit/writer">writer</a>
     </div>
@@ -105,6 +111,17 @@ on top of the transit-java library.</pre>
 <br />
 <h2>Public Variables and Functions</h2>
 <div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/-&gt;HandlerMapContainer">-&gt;HandlerMapContainer</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (-&gt;HandlerMapContainer m)
+</pre>
+  <pre id="var-docstr">Positional factory function for class cognitect.transit.HandlerMapContainer.</pre>
+  
+  
+  
+</div><div id="var-entry">
   <br />
   <hr />
   <h2 id="cognitect.transit/-&gt;Reader">-&gt;Reader</h2>
@@ -226,6 +243,22 @@ method invokes the provided fn.</pre>
 </div><div id="var-entry">
   <br />
   <hr />
+  <h2 id="cognitect.transit/read-handler-map">read-handler-map</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (read-handler-map custom-handlers)
+</pre>
+  <pre id="var-docstr">Returns a HandlerMapContainer containing a ReadHandlerMap
+containing all the default handlers for Clojure and Java and any
+custom handlers that you supply, letting you store the return value
+and pass it to multiple invocations of reader.  This can be more
+efficient than repeatedly handing the same raw map of tags -&gt; custom
+handlers to reader.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
   <h2 id="cognitect.transit/read-map-handler">read-map-handler</h2>
   <span id="var-type">function</span><br />
   <pre id="var-usage">Usage: (read-map-handler from-rep map-reader)
@@ -241,7 +274,7 @@ and mapReader methods invoke the provided fns.</pre>
   <h2 id="cognitect.transit/reader">reader</h2>
   <span id="var-type">function</span><br />
   <pre id="var-usage">Usage: (reader in type)
-       (reader in type opts)
+       (reader in type {:keys [handlers default-handler]})
 </pre>
   <pre id="var-docstr">Creates a reader over the provided source `in` using
 the specified format, one of: :msgpack, :json or :json-verbose.
@@ -346,10 +379,26 @@ handler method returns the value unaltered.</pre>
 </div><div id="var-entry">
   <br />
   <hr />
+  <h2 id="cognitect.transit/write-handler-map">write-handler-map</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (write-handler-map custom-handlers)
+</pre>
+  <pre id="var-docstr">Returns a HandlerMapContainer containing a WriteHandlerMap
+containing all the default handlers for Clojure and Java and any
+custom handlers that you supply, letting you store the return value
+and pass it to multiple invocations of writer.  This can be more
+efficient than repeatedly handing the same raw map of types -&gt; custom
+handlers to writer.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
   <h2 id="cognitect.transit/writer">writer</h2>
   <span id="var-type">function</span><br />
   <pre id="var-usage">Usage: (writer out type)
-       (writer out type opts)
+       (writer out type {:keys [handlers]})
 </pre>
   <pre id="var-docstr">Creates a writer over the provided destination `out` using
 the specified format, one of: :msgpack, :json or :json-verbose.
