@@ -291,7 +291,8 @@
        (throw (ex-info "Type must be :json, :json-verbose or :msgpack" {:type type})))))
 
 (defn read
-  "Reads a value from a reader."
+  "Reads a value from a reader. Throws EOFException when the reader's
+   InputStream is empty."
   [^Reader reader]
   (.read ^com.cognitect.transit.Reader (.r reader)))
 
