@@ -103,7 +103,7 @@
    :var-type "function",
    :arglists ([reader]),
    :doc
-   "Reads a value from a reader. Throws EOFException when the reader's\nInputStream is empty.",
+   "Reads a value from a reader. Throws a RuntimeException when\nthe reader's InputStream is empty.",
    :namespace "cognitect.transit",
    :wiki-url "/cognitect.transit-api.html#cognitect.transit/read"}
   {:raw-source-url nil,
