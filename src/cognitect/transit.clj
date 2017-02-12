@@ -19,7 +19,6 @@
   (:require [clojure.string :as str])
   (:import [com.cognitect.transit WriteHandler ReadHandler ArrayReadHandler MapReadHandler
             ArrayReader TransitFactory TransitFactory$Format MapReader]
-           [com.cognitect.transit.impl ReadHandlerMap WriteHandlerMap]
            [com.cognitect.transit.SPI ReaderSPI]
            [java.io InputStream OutputStream]))
 
