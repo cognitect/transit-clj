@@ -7,7 +7,7 @@
     <artifactId>transit-clj</artifactId>
     <packaging>jar</packaging>
     <version>dev</version>
-    <name>${project.groupId}:${project.artifactId}</name>
+    <name>transit-clj</name>
     <description>Transit is a data format and a set of libraries for conveying
         values between applications written in different languages. This library
         provides support for marshalling Transit data to/from Clojure.
@@ -137,16 +137,6 @@
     </build>
     <repositories>
         <repository>
-            <id>central</id>
-            <url>http://repo1.maven.org/maven2/</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-        </repository>
-        <repository>
             <id>clojars</id>
             <url>https://clojars.org/repo/</url>
             <snapshots>
@@ -155,11 +145,6 @@
             <releases>
                 <enabled>true</enabled>
             </releases>
-        </repository>
-        <repository>
-            <id>datomic-maven</id>
-            <name>Datomic Internal Maven</name>
-            <url>s3://datomic-maven/releases</url>
         </repository>
     </repositories>
     <dependencies>
@@ -172,7 +157,7 @@
         <dependency>
             <groupId>com.cognitect</groupId>
             <artifactId>transit-java</artifactId>
-            <version>0.8.319</version>
+            <version>0.8.324</version>
         </dependency>
         <dependency>
             <groupId>org.clojure</groupId>
