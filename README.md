@@ -81,6 +81,29 @@ _NOTE: Transit is a work in progress and may evolve based on feedback. As a resu
 
 \+ Extension using tagged values
 
+## Custom handlers
+
+```clojure
+(deftype CustomUri [s])
+
+(def write-handlers {CustomUri (reify WriteHandler
+                                 (tag [_ v] "r")
+                                 (rep [_ v] (.s v))
+                                 (stringRep [_ v] nil)
+                                 (getVerboseHandler [_] nil))})
+(def read-handlers {"r" (reify ReadHandler
+                          (fromRep [_ v] (CustomUri. v)))})
+
+(def out (ByteArrayOutputStream. 4096))
+(def writer (transit/writer out :json {:handlers write-handlers}))
+
+(transit/write writer (URI. "http://google.com"))
+(.toString out)  ;; => "[\"~#'\",\"~rhttp://google.com\"]"
+(def in (ByteArrayInputStream. (.toByteArray out)))
+(def reader (transit/reader in :json {:handlers read-handlers}))
+(prn (transit/read reader))  ;; => #object[user.CustomUri 0xe68a2af "user.CustomUri@e68a2af"]
+```
+
 ## Contributing
 
 This library is open source, developed internally by Cognitect. We welcome discussions of potential problems and enhancement suggestions on the [transit-format mailing list](https://groups.google.com/forum/#!forum/transit-format). Issues can be filed using GitHub [issues](https://github.com/cognitect/transit-clj/issues) for this project. Because transit is incorporated into products and client projects, we prefer to do development internally and are not accepting pull requests or patches.
