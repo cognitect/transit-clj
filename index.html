@@ -51,6 +51,8 @@ namespace.
     </div><div style="margin-left: 1em;" class="toc-entry">
       <a href="#cognitect.transit/-&gt;Reader">-&gt;Reader</a>
     </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/-&gt;WithMeta">-&gt;WithMeta</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
       <a href="#cognitect.transit/-&gt;Writer">-&gt;Writer</a>
     </div><div style="margin-left: 1em;" class="toc-entry">
       <a href="#cognitect.transit/default-read-handlers">default-read-handlers</a>
@@ -91,6 +93,8 @@ namespace.
     </div><div style="margin-left: 1em;" class="toc-entry">
       <a href="#cognitect.transit/write-handler-map">write-handler-map</a>
     </div><div style="margin-left: 1em;" class="toc-entry">
+      <a href="#cognitect.transit/write-meta">write-meta</a>
+    </div><div style="margin-left: 1em;" class="toc-entry">
       <a href="#cognitect.transit/writer">writer</a>
     </div>
     <br />
@@ -129,6 +133,17 @@ on top of the transit-java library.</pre>
   <pre id="var-usage">Usage: (-&gt;Reader r)
 </pre>
   <pre id="var-docstr">Positional factory function for class cognitect.transit.Reader.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
+  <h2 id="cognitect.transit/-&gt;WithMeta">-&gt;WithMeta</h2>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (-&gt;WithMeta value meta)
+</pre>
+  <pre id="var-docstr">Positional factory function for class cognitect.transit.WithMeta.</pre>
   
   
   
@@ -396,10 +411,20 @@ handlers to writer.</pre>
 </div><div id="var-entry">
   <br />
   <hr />
+  <h2 id="cognitect.transit/write-meta">write-meta</h2>
+  <span id="var-type">var</span><br />
+  <pre id="var-usage"></pre>
+  <pre id="var-docstr">For :transform. Will write any metadata present on the value.</pre>
+  
+  
+  
+</div><div id="var-entry">
+  <br />
+  <hr />
   <h2 id="cognitect.transit/writer">writer</h2>
   <span id="var-type">function</span><br />
   <pre id="var-usage">Usage: (writer out type)
-       (writer out type {:keys [handlers]})
+       (writer out type {:keys [handlers transform]})
 </pre>
   <pre id="var-docstr">Creates a writer over the provided destination `out` using
 the specified format, one of: :msgpack, :json or :json-verbose.
