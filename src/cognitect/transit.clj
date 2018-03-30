@@ -20,7 +20,8 @@
   (:import [com.cognitect.transit WriteHandler ReadHandler ArrayReadHandler MapReadHandler
             ArrayReader TransitFactory TransitFactory$Format MapReader]
            [com.cognitect.transit.SPI ReaderSPI]
-           [java.io InputStream OutputStream]))
+           [java.io InputStream OutputStream]
+           [java.util.function Function]))
 
 (defprotocol HandlerMapProvider
   (handler-map [this]))
@@ -80,6 +81,8 @@
          (stringRep [_ o] (when str-rep-fn (str-rep-fn o)))
          (getVerboseHandler [_] (when verbose-handler-fn (verbose-handler-fn)))))))
 
+(deftype WithMeta [value meta])
+
 (def default-write-handlers
   "Returns a map of default WriteHandlers for
    Clojure types. Java types are handled
@@ -89,7 +92,7 @@
    java.util.List
    (reify WriteHandler
      (tag [_ l] (if (seq? l) "list" "array"))
-     (rep [_ l] (if (seq? l) (TransitFactory/taggedValue "array" l ) l))
+     (rep [_ l] (if (seq? l) (TransitFactory/taggedValue "array" l) l))
      (stringRep [_ _] nil)
      (getVerboseHandler [_] nil))
 
@@ -120,7 +123,16 @@
      (rep [_ sym] (nsed-name sym))
      (stringRep [_ sym] (nsed-name sym))
      (getVerboseHandler [_] nil))
-   })
+
+   cognitect.transit.WithMeta
+   (reify WriteHandler
+     (tag [_ _] "with-meta")
+     (rep [_ o]
+       (TransitFactory/taggedValue "array"
+         [(.-value ^cognitect.transit.WithMeta o)
+          (.-meta ^cognitect.transit.WithMeta o)]))
+     (stringRep [_ _] nil)
+     (getVerboseHandler [_] nil))})
 
 (deftype Writer [w])
 
@@ -134,12 +146,12 @@
    with the default-handlers and then with the default handlers
    provided by transit-java."
   ([out type] (writer out type {}))
-  ([^OutputStream out type {:keys [handlers]}]
+  ([^OutputStream out type {:keys [handlers transform]}]
      (if (#{:json :json-verbose :msgpack} type)
        (let [handler-map (if (instance? HandlerMapContainer handlers)
                            (handler-map handlers)
                            (merge default-write-handlers handlers))]
-         (Writer. (TransitFactory/writer (transit-format type) out handler-map)))
+         (Writer. (TransitFactory/writer (transit-format type) out handler-map nil transform)))
        (throw (ex-info "Type must be :json, :json-verbose or :msgpack" {:type type})))))
 
 (defn write
@@ -219,7 +231,7 @@
 
    "cmap"
    (reify ArrayReadHandler
-     (fromRep [_ o] o)
+     (fromRep [_ o])
      (arrayReader [_]
        (let [marker (Object.)
              ^objects next-key (object-array [marker])]
@@ -236,7 +248,11 @@
                    (aset next-key 0 marker)
                    (assoc! m k item)))))
            (complete [_ m] (persistent! m))))))
-   })
+
+   "with-meta"
+   (reify ReadHandler
+     (fromRep [_ o]
+       (with-meta (get ^java.util.List o 0) (get ^java.util.List o 1))))})
 
 (defn map-builder
   "Creates a MapBuilder that makes Clojure-
@@ -350,8 +366,17 @@
   (HandlerMapContainer.
    (TransitFactory/writeHandlerMap (merge default-write-handlers custom-handlers))))
 
-(comment
+(def ^{:doc "For :transform. Will write any metadata present on the value."}
+  write-meta
+  (reify Function
+    (apply [_ x]
+      (if (instance? clojure.lang.IObj x)
+        (if-let [m (meta x)]
+          (WithMeta. (with-meta x nil) m)
+          x)
+        x))))
 
+(comment
   (require 'cognitect.transit)
   (in-ns 'cognitect.transit)
 
@@ -362,9 +387,15 @@
   (def w (writer out :json))
   (def w (writer out :json-verbose))
   (def w (writer out :msgpack))
+  (def w (writer out :msgpack {:transform write-meta}))
+  (def w (writer out :json {:transform write-meta}))
 
   (write w "foo")
   (write w 10)
+  (write w [1 2 3])
+  (write w (with-meta [1 2 3] {:foo 'bar}))
+  (String. (.toByteArray out))
+
   (write w {:a-key 1 :b-key 2})
   (write w {"a" "1" "b" "2"})
   (write w {:a-key [1 2]})
@@ -383,7 +414,9 @@
 
   (def r (reader in :msgpack))
 
-  (read r)
+  (def x (read r))
+  (meta x)
+
   (type (read r))
 
   ;; extensibility
