@@ -144,7 +144,10 @@
 
    :handlers - a map of types to WriteHandler instances, they are merged
    with the default-handlers and then with the default handlers
-   provided by transit-java."
+   provided by transit-java.
+
+   :transform - a function of one argument that will transform values before
+   they are written."
   ([out type] (writer out type {}))
   ([^OutputStream out type {:keys [handlers transform]}]
      (if (#{:json :json-verbose :msgpack} type)
