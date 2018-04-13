@@ -21,7 +21,7 @@
    :name "->Reader",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 277,
+   :line 283,
    :var-type "function",
    :arglists ([r]),
    :doc
@@ -57,7 +57,7 @@
    :wiki-url
    "/cognitect.transit-api.html#cognitect.transit/default-read-handlers",
    :namespace "cognitect.transit",
-   :line 189,
+   :line 195,
    :var-type "var",
    :doc
    "Returns a map of default ReadHandlers for\nClojure types. Java types are handled\nby the default ReadHandlers provided by the\ntransit-java library.",
@@ -77,7 +77,7 @@
    :name "list-builder",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 267,
+   :line 273,
    :var-type "function",
    :arglists ([]),
    :doc
@@ -89,7 +89,7 @@
    :name "map-builder",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 257,
+   :line 263,
    :var-type "function",
    :arglists ([]),
    :doc "Creates a MapBuilder that makes Clojure-\ncompatible maps.",
@@ -111,7 +111,7 @@
    :name "read",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 308,
+   :line 314,
    :var-type "function",
    :arglists ([reader]),
    :doc
@@ -122,7 +122,7 @@
    :name "read-array-handler",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 180,
+   :line 186,
    :var-type "function",
    :arglists ([from-rep array-reader]),
    :doc
@@ -134,7 +134,7 @@
    :name "read-handler",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 165,
+   :line 171,
    :var-type "function",
    :arglists ([from-rep]),
    :doc
@@ -146,7 +146,7 @@
    :name "read-handler-map",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 347,
+   :line 353,
    :var-type "function",
    :arglists ([custom-handlers]),
    :doc
@@ -158,7 +158,7 @@
    :name "read-map-handler",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 172,
+   :line 178,
    :var-type "function",
    :arglists ([from-rep map-reader]),
    :doc
@@ -170,7 +170,7 @@
    :name "reader",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 279,
+   :line 285,
    :var-type "function",
    :arglists ([in type] [in type {:keys [handlers default-handler]}]),
    :doc
@@ -181,7 +181,7 @@
    :name "record-read-handler",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 330,
+   :line 336,
    :var-type "function",
    :arglists ([type]),
    :doc "Creates a ReadHandler for a record type",
@@ -192,7 +192,7 @@
    :name "record-read-handlers",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 340,
+   :line 346,
    :var-type "function",
    :arglists ([& types]),
    :doc "Creates a map of record type tags to ReadHandlers",
@@ -203,7 +203,7 @@
    :name "record-write-handler",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 314,
+   :line 320,
    :var-type "function",
    :arglists ([type]),
    :doc "Creates a WriteHandler for a record type",
@@ -214,7 +214,7 @@
    :name "record-write-handlers",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 323,
+   :line 329,
    :var-type "function",
    :arglists ([& types]),
    :doc "Creates a map of record types to WriteHandlers",
@@ -236,7 +236,7 @@
    :name "write",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 157,
+   :line 163,
    :var-type "function",
    :arglists ([writer o]),
    :doc "Writes a value to a transit writer.",
@@ -261,7 +261,7 @@
    :name "write-handler-map",
    :file "src/cognitect/transit.clj",
    :source-url nil,
-   :line 358,
+   :line 364,
    :var-type "function",
    :arglists ([custom-handlers]),
    :doc
@@ -269,17 +269,18 @@
    :namespace "cognitect.transit",
    :wiki-url
    "/cognitect.transit-api.html#cognitect.transit/write-handler-map"}
-  {:file "src/cognitect/transit.clj",
-   :raw-source-url nil,
+  {:raw-source-url nil,
+   :name "write-meta",
+   :file "src/cognitect/transit.clj",
    :source-url nil,
-   :wiki-url
-   "/cognitect.transit-api.html#cognitect.transit/write-meta",
-   :namespace "cognitect.transit",
-   :line 369,
-   :var-type "var",
+   :line 375,
+   :var-type "function",
+   :arglists ([x]),
    :doc
    "For :transform. Will write any metadata present on the value.",
-   :name "write-meta"}
+   :namespace "cognitect.transit",
+   :wiki-url
+   "/cognitect.transit-api.html#cognitect.transit/write-meta"}
   {:raw-source-url nil,
    :name "writer",
    :file "src/cognitect/transit.clj",
@@ -288,6 +289,6 @@
    :var-type "function",
    :arglists ([out type] [out type {:keys [handlers transform]}]),
    :doc
-   "Creates a writer over the provided destination `out` using\nthe specified format, one of: :msgpack, :json or :json-verbose.\n\nAn optional opts map may be passed. Supported options are:\n\n:handlers - a map of types to WriteHandler instances, they are merged\nwith the default-handlers and then with the default handlers\nprovided by transit-java.",
+   "Creates a writer over the provided destination `out` using\nthe specified format, one of: :msgpack, :json or :json-verbose.\n\nAn optional opts map may be passed. Supported options are:\n\n:handlers - a map of types to WriteHandler instances, they are merged\nwith the default-handlers and then with the default handlers\nprovided by transit-java.\n\n:transform - a function of one argument that will transform values before\nthey are written.",
    :namespace "cognitect.transit",
    :wiki-url "/cognitect.transit-api.html#cognitect.transit/writer"})}

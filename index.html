@@ -412,8 +412,9 @@ handlers to writer.</pre>
   <br />
   <hr />
   <h2 id="cognitect.transit/write-meta">write-meta</h2>
-  <span id="var-type">var</span><br />
-  <pre id="var-usage"></pre>
+  <span id="var-type">function</span><br />
+  <pre id="var-usage">Usage: (write-meta x)
+</pre>
   <pre id="var-docstr">For :transform. Will write any metadata present on the value.</pre>
   
   
@@ -433,7 +434,10 @@ An optional opts map may be passed. Supported options are:
 
 :handlers - a map of types to WriteHandler instances, they are merged
 with the default-handlers and then with the default handlers
-provided by transit-java.</pre>
+provided by transit-java.
+
+:transform - a function of one argument that will transform values before
+they are written.</pre>
   
   
   
