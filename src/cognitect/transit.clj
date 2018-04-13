@@ -151,7 +151,10 @@
        (let [handler-map (if (instance? HandlerMapContainer handlers)
                            (handler-map handlers)
                            (merge default-write-handlers handlers))]
-         (Writer. (TransitFactory/writer (transit-format type) out handler-map nil transform)))
+         (Writer. (TransitFactory/writer (transit-format type) out handler-map nil
+                    (reify Function
+                      (apply [_ x]
+                        (transform x))))))
        (throw (ex-info "Type must be :json, :json-verbose or :msgpack" {:type type})))))
 
 (defn write
@@ -366,15 +369,14 @@
   (HandlerMapContainer.
    (TransitFactory/writeHandlerMap (merge default-write-handlers custom-handlers))))
 
-(def ^{:doc "For :transform. Will write any metadata present on the value."}
-  write-meta
-  (reify Function
-    (apply [_ x]
-      (if (instance? clojure.lang.IObj x)
-        (if-let [m (meta x)]
-          (WithMeta. (with-meta x nil) m)
-          x)
-        x))))
+(defn write-meta
+  "For :transform. Will write any metadata present on the value."
+  [x]
+  (if (instance? clojure.lang.IObj x)
+    (if-let [m (meta x)]
+      (WithMeta. (with-meta x nil) m)
+      x)
+    x))
 
 (comment
   (require 'cognitect.transit)
