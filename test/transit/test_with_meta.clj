@@ -17,6 +17,15 @@
             [cognitect.transit :as t])
   (:import [java.io ByteArrayInputStream ByteArrayOutputStream]))
 
+(deftest test-basic-json
+  (let [out (ByteArrayOutputStream. 2000)
+        w   (t/writer out :json)
+        _   (t/write w [1 2 3])
+        in  (ByteArrayInputStream. (.toByteArray out))
+        r   (t/reader in :json)
+        x   (t/read r)]
+    (is (= [1 2 3] x))))
+
 (deftest test-basic-with-meta-json
   (let [out (ByteArrayOutputStream. 2000)
         w   (t/writer out :json {:transform t/write-meta})
