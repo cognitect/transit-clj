@@ -155,9 +155,10 @@
                            (handler-map handlers)
                            (merge default-write-handlers handlers))]
          (Writer. (TransitFactory/writer (transit-format type) out handler-map nil
-                    (reify Function
-                      (apply [_ x]
-                        (transform x))))))
+                    (when transform
+                      (reify Function
+                        (apply [_ x]
+                          (transform x)))))))
        (throw (ex-info "Type must be :json, :json-verbose or :msgpack" {:type type})))))
 
 (defn write
