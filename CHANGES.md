@@ -1,5 +1,21 @@
 # transit-clj 0.8
 
+### next / 2018-08-17
+
+* Update to latest transit-java 0.8.337
+
+### 0.8.309 / 2018-04-16
+
+* Bug fix on Function changes in prior - assumed transform was non-nil
+
+### 0.8.307 / 2018-04-13
+
+* Support transform functions in transit Clojure API
+
+### 0.8.303 / 2018-03-30
+
+* Add metadata support
+
 ### 0.8.300 / 2017-03-13
 
 * Update transit-java dependency to 0.8.324
