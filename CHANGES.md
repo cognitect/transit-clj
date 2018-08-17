@@ -1,6 +1,6 @@
 # transit-clj 0.8
 
-### next / 2018-08-17
+### 0.8.313 / 2018-08-17
 
 * Update to latest transit-java 0.8.337
 
