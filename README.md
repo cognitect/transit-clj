@@ -35,7 +35,7 @@ _NOTE: Transit is a work in progress and may evolve based on feedback. As a resu
 ## Usage
 
 ```clojure
-(require '[cognitect.transit :as transit])
+(require '[cognitect.transit :as transit]')
 (import [java.io ByteArrayInputStream ByteArrayOutputStream])
 
 ;; Write data to a stream
