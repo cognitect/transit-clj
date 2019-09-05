@@ -425,7 +425,7 @@ handlers to writer.</pre>
   <h2 id="cognitect.transit/writer">writer</h2>
   <span id="var-type">function</span><br />
   <pre id="var-usage">Usage: (writer out type)
-       (writer out type {:keys [handlers transform]})
+       (writer out type {:keys [handlers default-handler transform]})
 </pre>
   <pre id="var-docstr">Creates a writer over the provided destination `out` using
 the specified format, one of: :msgpack, :json or :json-verbose.
@@ -435,6 +435,10 @@ An optional opts map may be passed. Supported options are:
 :handlers - a map of types to WriteHandler instances, they are merged
 with the default-handlers and then with the default handlers
 provided by transit-java.
+
+:default-handler - a default WriteHandler to use if NO handler is
+found for a type. If no default is specified, an error will be
+thrown for an unknown type.
 
 :transform - a function of one argument that will transform values before
 they are written.</pre>
