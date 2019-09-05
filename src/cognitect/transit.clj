@@ -146,15 +146,19 @@
    with the default-handlers and then with the default handlers
    provided by transit-java.
 
+   :default-handler - a default WriteHandler to use if NO handler is
+   found for a type. If no default is specified, an error will be
+   thrown for an unknown type.
+
    :transform - a function of one argument that will transform values before
    they are written."
   ([out type] (writer out type {}))
-  ([^OutputStream out type {:keys [handlers transform]}]
+  ([^OutputStream out type {:keys [handlers default-handler transform]}]
      (if (#{:json :json-verbose :msgpack} type)
        (let [handler-map (if (instance? HandlerMapContainer handlers)
                            (handler-map handlers)
                            (merge default-write-handlers handlers))]
-         (Writer. (TransitFactory/writer (transit-format type) out handler-map nil
+         (Writer. (TransitFactory/writer (transit-format type) out handler-map default-handler
                     (when transform
                       (reify Function
                         (apply [_ x]
