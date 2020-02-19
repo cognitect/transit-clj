@@ -1,5 +1,9 @@
 # transit-clj 0.8
 
+### 1.0.324 / 2020-02-18
+
+* No changes
+
 ### 0.8.319 / 2019-09-05
 
 * Add :default-handler option to cognitect.transit/writer (#37)
