@@ -161,13 +161,13 @@
         <dependency>
             <groupId>org.clojure</groupId>
             <artifactId>clojure</artifactId>
-            <version>1.6.0</version>
+            <version>1.7.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.cognitect</groupId>
             <artifactId>transit-java</artifactId>
-            <version>0.8.337</version>
+            <version>1.0.343</version>
         </dependency>
         <dependency>
             <groupId>autodoc</groupId>
@@ -178,7 +178,7 @@
         <dependency>
             <groupId>org.clojure</groupId>
             <artifactId>test.check</artifactId>
-            <version>0.8.2</version>
+            <version>1.0.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
