@@ -1,9 +1,9 @@
 {:namespaces
- ({:source-url nil,
-   :wiki-url "cognitect.transit-api.html",
+ ({:doc
+   "An implementation of the transit-format for Clojure built\non top of the transit-java library.",
    :name "cognitect.transit",
-   :doc
-   "An implementation of the transit-format for Clojure built\non top of the transit-java library."}),
+   :wiki-url "cognitect.transit-api.html",
+   :source-url nil}),
  :vars
  ({:raw-source-url nil,
    :name "->HandlerMapContainer",
@@ -51,28 +51,28 @@
    "Positional factory function for class cognitect.transit.Writer.",
    :namespace "cognitect.transit",
    :wiki-url "/cognitect.transit-api.html#cognitect.transit/->Writer"}
-  {:file "src/cognitect/transit.clj",
-   :raw-source-url nil,
-   :source-url nil,
-   :wiki-url
-   "/cognitect.transit-api.html#cognitect.transit/default-read-handlers",
-   :namespace "cognitect.transit",
-   :line 200,
-   :var-type "var",
+  {:name "default-read-handlers",
    :doc
    "Returns a map of default ReadHandlers for\nClojure types. Java types are handled\nby the default ReadHandlers provided by the\ntransit-java library.",
-   :name "default-read-handlers"}
-  {:file "src/cognitect/transit.clj",
-   :raw-source-url nil,
-   :source-url nil,
-   :wiki-url
-   "/cognitect.transit-api.html#cognitect.transit/default-write-handlers",
-   :namespace "cognitect.transit",
-   :line 86,
    :var-type "var",
+   :line 200,
+   :namespace "cognitect.transit",
+   :wiki-url
+   "/cognitect.transit-api.html#cognitect.transit/default-read-handlers",
+   :source-url nil,
+   :raw-source-url nil,
+   :file "src/cognitect/transit.clj"}
+  {:name "default-write-handlers",
    :doc
    "Returns a map of default WriteHandlers for\nClojure types. Java types are handled\nby the default WriteHandlers provided by the\ntransit-java library.",
-   :name "default-write-handlers"}
+   :var-type "var",
+   :line 86,
+   :namespace "cognitect.transit",
+   :wiki-url
+   "/cognitect.transit-api.html#cognitect.transit/default-write-handlers",
+   :source-url nil,
+   :raw-source-url nil,
+   :file "src/cognitect/transit.clj"}
   {:raw-source-url nil,
    :name "list-builder",
    :file "src/cognitect/transit.clj",
