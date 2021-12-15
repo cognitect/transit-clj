@@ -12,11 +12,11 @@
         values between applications written in different languages. This library
         provides support for marshalling Transit data to/from Clojure.
     </description>
-    <url>http://github.com/cognitect/transit-clj</url>
+    <url>https://github.com/cognitect/transit-clj</url>
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
         </license>
     </licenses>
     <developers>
@@ -24,7 +24,7 @@
             <name>Tim Ewald</name>
             <email>tim@cognitect.com</email>
             <organization>Cognitect</organization>
-            <organizationUrl>http://cognitect.com</organizationUrl>
+            <organizationUrl>https://cognitect.com</organizationUrl>
         </developer>
     </developers>
     <scm>
