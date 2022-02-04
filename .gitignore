@@ -11,3 +11,4 @@ last-exception*
 .#*
 .idea
 *.iml
+.java-version
