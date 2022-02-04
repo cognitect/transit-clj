@@ -167,7 +167,7 @@
         <dependency>
             <groupId>com.cognitect</groupId>
             <artifactId>transit-java</artifactId>
-            <version>1.0.343</version>
+            <version>1.0.362</version>
         </dependency>
         <dependency>
             <groupId>autodoc</groupId>

@@ -1,4 +1,8 @@
-# transit-clj 0.8
+# transit-clj
+
+### next
+
+* Update to latest transit-java 1.0.362
 
 ### 1.0.324 / 2020-02-18
 
