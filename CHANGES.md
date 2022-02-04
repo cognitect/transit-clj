@@ -1,6 +1,6 @@
 # transit-clj
 
-### next
+### 1.0.329 / 2022-02-04
 
 * Update to latest transit-java 1.0.362
 
