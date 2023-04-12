@@ -16,6 +16,12 @@ _NOTE: Transit is intended primarily as a wire protocol for transferring data be
 * Latest release: 1.0.333
 * [All Released Versions](https://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22com.cognitect%22%20AND%20a%3A%22transit-clj%22)
 
+[deps.edn](https://clojure.org/reference/deps_and_cli) dependency information:
+
+```clj
+com.cognitect/transit-clj {:mvn/version "1.0.333"}
+```
+
 [Maven](https://maven.apache.org/) dependency information:
 
 ```xml
