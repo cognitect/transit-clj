@@ -1,6 +1,6 @@
 {:paths ["src"]
  :deps {org.clojure/clojure {:mvn/version "1.9.0"}
-        com.cognitect/transit-java {:mvn/version "1.0.371"}}
+        com.cognitect/transit-java {:mvn/version "1.1.389"}}
 
  :aliases {
    ;; Regenerate docs in docs/
