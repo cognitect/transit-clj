@@ -15,7 +15,7 @@ target_name=transit-clj-${version}
 
 echo "Releasing..."
 mvn versions:set -DnewVersion=${version}
-mvn clean deploy
+mvn clean deploy -Psign
 mvn versions:revert
 
 echo "Tagging..."
@@ -23,7 +23,7 @@ git tag -a v${version} -m "Release ${version}"
 git push origin v${version}
 
 echo "Updating README.md versions"
-sed -i '' "s/[[:digit:]]\{1,2\}\.[[:digit:]]\{1,2\}\.[[:digit:]]\{2,4\}/${version}/g" README.md
+sed -i "s/[[:digit:]]\{1,2\}\.[[:digit:]]\{1,2\}\.[[:digit:]]\{2,4\}/${version}/g" README.md
 git commit -m "Update README.md with ${version}" README.md
 git push 
 
