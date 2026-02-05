@@ -28,7 +28,7 @@ git commit -m "Update README.md with ${version}" README.md
 git push 
 
 echo "Updating github pages with new api docs"
-clj -X:docs
+clojure -X:docs
 git commit -m "Update docs"
 git push
 
