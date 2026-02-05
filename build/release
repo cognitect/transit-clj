@@ -29,7 +29,6 @@ git push
 
 echo "Updating github pages with new api docs"
 clojure -X:docs
-git commit -m "Update docs"
-git push
+git diff --quiet docs/ || (git add docs/ && git commit -m "Update docs" && git push)
 
 echo "Release done!"
