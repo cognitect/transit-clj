@@ -1,8 +1,11 @@
 # transit-clj
 
-### next
+### 1.1.347 / 2026-02-05
 
-* Update to latest transit-java 1.0.371
+* Update transit-java 1.0.371 -> 1.1.389
+* Update Clojure 1.9.0 -> 1.12.4
+* Update test.check 1.1.1 -> 1.1.3
+* Add GitHub Actions CI
 
 ### 1.0.329 / 2022-02-04
 
