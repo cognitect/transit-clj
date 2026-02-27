@@ -8,7 +8,7 @@ rm -rf ./target
 echo "Calculating version..."
 prefix=`cat VERSION_PREFIX`
 suffix=`build/revision`
-version=$prefix.$suffix
+version=$prefix.$suffix-alpha
 echo $version
 
 target_name=transit-clj-${version}
@@ -22,13 +22,13 @@ echo "Tagging..."
 git tag -a v${version} -m "Release ${version}"
 git push origin v${version}
 
-echo "Updating README.md versions"
-sed -i "s/[[:digit:]]\{1,2\}\.[[:digit:]]\{1,2\}\.[[:digit:]]\{2,4\}/${version}/g" README.md
-git commit -m "Update README.md with ${version}" README.md
-git push 
+# echo "Updating README.md versions"
+# sed -i "s/[[:digit:]]\{1,2\}\.[[:digit:]]\{1,2\}\.[[:digit:]]\{2,4\}/${version}/g" README.md
+# git commit -m "Update README.md with ${version}" README.md
+# git push
 
-echo "Updating github pages with new api docs"
-clojure -X:docs
-git diff --quiet docs/ || (git add docs/ && git commit -m "Update docs" && git push)
+# echo "Updating github pages with new api docs"
+# clojure -X:docs
+# git diff --quiet docs/ || (git add docs/ && git commit -m "Update docs" && git push)
 
 echo "Release done!"
