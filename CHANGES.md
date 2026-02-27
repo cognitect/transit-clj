@@ -1,5 +1,9 @@
 # transit-clj
 
+### 1.1.352-alpha / 2026-02-27
+
+* Update transit-java 1.1.389 -> 1.1.398-alpha1
+
 ### 1.1.347 / 2026-02-05
 
 * Update transit-java 1.0.371 -> 1.1.389
