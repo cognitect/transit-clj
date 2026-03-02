@@ -5,6 +5,12 @@ permissions:
 
 on:
   workflow_dispatch:
+    inputs:
+      alpha:
+        description: 'Alpha release'
+        type: boolean
+        default: false
+
 
 jobs:
   release:
@@ -40,6 +46,7 @@ jobs:
       - name: Release
         run: build/release
         env:
+          ALPHA: ${{ github.event.inputs.alpha }}
           MAVEN_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
           GPG_PASSPHRASE: ${{ secrets.CENTRAL_GPG_SECRET_KEY_PASSWORD }}

@@ -9,6 +9,9 @@ echo "Calculating version..."
 prefix=`cat VERSION_PREFIX`
 suffix=`build/revision`
 version=$prefix.$suffix
+if [ "$ALPHA" = "true" ]; then
+  version=${version}-alpha
+fi
 echo $version
 
 target_name=transit-clj-${version}
@@ -25,7 +28,7 @@ git push origin v${version}
 echo "Updating README.md versions"
 sed -i "s/[[:digit:]]\{1,2\}\.[[:digit:]]\{1,2\}\.[[:digit:]]\{2,4\}/${version}/g" README.md
 git commit -m "Update README.md with ${version}" README.md
-git push 
+git push
 
 echo "Updating github pages with new api docs"
 clojure -X:docs
