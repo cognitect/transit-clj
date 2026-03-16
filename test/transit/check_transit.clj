@@ -15,6 +15,7 @@
 (ns transit.check-transit
   (:require [cognitect.transit :as transit]
             [clojure.test.check :as tc]
+            [clojure.test.check.clojure-test :refer [defspec]]
             [clojure.test.check.properties :as prop]
             [clojure.test.check.generators :as gen]
             [clojure.string :as str])
@@ -62,6 +63,18 @@
                    (let [handler# (transit/record-read-handler
                                    (resolve (symbol (Compiler/munge (str '~ns-sym "." '~record-sym)))))]
                      (.fromRep handler# {:a 1}))))))))
+
+(defspec check-record-read-handler 100
+  (record-read-handler-returns-read-handler))
+
+(defspec check-roundtrip-json 10000
+  (roundtrip :json))
+
+(defspec check-roundtrip-json-verbose 10000
+  (roundtrip :json-verbose))
+
+(defspec check-roundtrip-msgpack 10000
+  (roundtrip :msgpack))
 
 (defn run-test [n property test-desc]
   (println "check:" test-desc)
