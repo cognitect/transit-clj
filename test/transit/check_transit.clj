@@ -34,7 +34,7 @@
       s)))
 
 (defn roundtrip [encoding]
-  (prop/for-all [value gen/any-printable]
+  (prop/for-all [value gen/any-printable-equatable]
                 (let [out (ByteArrayOutputStream. 2048)
                       writer (transit/writer out encoding)
                       _ (transit/write writer value)
