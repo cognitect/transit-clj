@@ -1,5 +1,9 @@
 # transit-clj
 
+### next
+
+* Update Clojure 1.12.4 -> 1.12.5
+
 ### 1.1.357 / 2026-03-13
 
 * Update transit-java 1.1.401-alpha -> 1.1.403
