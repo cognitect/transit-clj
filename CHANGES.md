@@ -1,7 +1,8 @@
 # transit-clj
 
-### next
+### 1.1.363 / 2026-07-24
 
+* Bump all transit-java and other transitive deps
 * Update Clojure 1.12.4 -> 1.12.5
 
 ### 1.1.357 / 2026-03-13
