@@ -1,5 +1,9 @@
 # transit-clj
 
+### next
+
+* Update transit-java 1.1.406 -> 1.1.411
+
 ### 1.1.363 / 2026-07-24
 
 * Bump all transit-java and other transitive deps

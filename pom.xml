@@ -168,13 +168,13 @@
         <dependency>
             <groupId>org.clojure</groupId>
             <artifactId>clojure</artifactId>
-            <version>1.12.5</version>
+            <version>1.12.6</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.cognitect</groupId>
             <artifactId>transit-java</artifactId>
-            <version>1.1.406</version>
+            <version>1.1.411</version>
         </dependency>
         <dependency>
             <groupId>org.clojure</groupId>
