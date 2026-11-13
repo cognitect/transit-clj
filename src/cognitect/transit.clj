@@ -236,7 +236,8 @@
      (arrayReader [_]
        (reify ArrayReader
          (init [_] (java.util.ArrayList.))
-         (init [_ ^int size] (java.util.ArrayList. size))
+         ;; preallocate at most 1000 elements from the declared size
+         (init [_ ^int size] (java.util.ArrayList. (min size 1000)))
          (add [_ l item] (.add ^java.util.List l item) l)
          (complete [_ l] (or (seq l) '())))))
 
