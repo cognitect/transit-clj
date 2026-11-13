@@ -1,8 +1,9 @@
 # transit-clj
 
-### next
+### 1.2.372 / 2026-11-13
 
 * Limit preallocation from the declared msgpack list size to 1000 elements
+* Update transit-java 1.1.411 -> 1.2.416
 
 ### 1.1.367 / 2026-10-29
 
